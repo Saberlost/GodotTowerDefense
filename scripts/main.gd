@@ -7,6 +7,7 @@ const MAP_SECTION_HEIGHT = 10
 const BASE_ENEMY_COUNT = 5
 const ENEMY_SCALING_FACTOR = 2
 const DRAGON_UNLOCK_WAVE = 5
+const DEBUG_MODE = false  # Set to true to enable debug output
 
 var current_wave = 0
 var gold = 200
@@ -144,11 +145,14 @@ func _draw():
 
 func update_camera_position():
 	if camera:
-		# Center camera on the current map sections
+		# Center camera on the entire map (all sections combined)
+		# This keeps the full playable area visible as the map expands
+		# Formula: camera_x = (total_sections * section_width * tile_size) / 2
 		var map_width = MAP_SECTION_WIDTH * current_section * TILE_SIZE
 		var map_height = MAP_SECTION_HEIGHT * TILE_SIZE
 		camera.position = Vector2(map_width / 2.0, map_height / 2.0)
-		print("Camera positioned at ", camera.position, " for ", current_section, " sections")
+		if DEBUG_MODE:
+			print("Camera positioned at ", camera.position, " for ", current_section, " sections")
 
 func start_wave():
 	current_wave += 1
@@ -181,7 +185,8 @@ func spawn_enemy(type: String):
 		enemy.connect("died", _on_enemy_died)
 		
 		enemy_container.add_child(enemy)
-		print("Spawned ", type, " at ", spawn_point, " with path of ", enemy.path.size(), " points")
+		if DEBUG_MODE:
+			print("Spawned ", type, " at ", spawn_point, " with path of ", enemy.path.size(), " points")
 
 func _on_enemy_reached_end(enemy):
 	lives -= 1

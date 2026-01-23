@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://biw1xyg2w6xlj"]
 
-[ext_resource type="Script" path="res://scripts/enemy.gd" id="1"]
+[ext_resource type="Script" uid="uid://cnsr1phy2v2lp" path="res://scripts/enemy.gd" id="1"]
 
 [node name="Orc" type="CharacterBody2D"]
 collision_layer = 2

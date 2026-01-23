@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://co7sxrq7e2qyf"]
 
-[ext_resource type="Script" path="res://scripts/tower.gd" id="1"]
+[ext_resource type="Script" uid="uid://bcnchke4v53s0" path="res://scripts/tower.gd" id="1"]
 
 [node name="ArcherTower" type="Node2D"]
 script = ExtResource("1")

@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://c4jv0yfgdm1ha"]
 
-[ext_resource type="Script" path="res://scripts/enemy.gd" id="1"]
+[ext_resource type="Script" uid="uid://cnsr1phy2v2lp" path="res://scripts/enemy.gd" id="1"]
 
 [node name="Dragon" type="CharacterBody2D"]
 collision_layer = 2

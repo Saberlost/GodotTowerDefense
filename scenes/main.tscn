@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3 uid="uid://dtqwxj3yt1bwa"]
 
-[ext_resource type="Script" path="res://scripts/main.gd" id="1"]
-[ext_resource type="Script" path="res://scripts/ui.gd" id="2"]
+[ext_resource type="Script" uid="uid://b2pxy77ji1gyl" path="res://scripts/main.gd" id="1"]
+[ext_resource type="Script" uid="uid://dwsr75q55ci8q" path="res://scripts/ui.gd" id="2"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1")
@@ -38,18 +38,18 @@ layout_mode = 2
 
 [node name="GoldLabel" type="Label" parent="UI/MarginContainer/VBoxContainer/StatsContainer"]
 layout_mode = 2
-text = "Gold: 200"
 theme_type_variation = &"HeaderLarge"
+text = "Gold: 200"
 
 [node name="LivesLabel" type="Label" parent="UI/MarginContainer/VBoxContainer/StatsContainer"]
 layout_mode = 2
-text = "Lives: 20"
 theme_type_variation = &"HeaderLarge"
+text = "Lives: 20"
 
 [node name="WaveLabel" type="Label" parent="UI/MarginContainer/VBoxContainer/StatsContainer"]
 layout_mode = 2
-text = "Wave: 0"
 theme_type_variation = &"HeaderLarge"
+text = "Wave: 0"
 
 [node name="StartWaveButton" type="Button" parent="UI/MarginContainer/VBoxContainer"]
 layout_mode = 2
@@ -74,6 +74,6 @@ text = "Cannon (150g)"
 layout_mode = 2
 text = "Path Blocker (300g)"
 
+[connection signal="blocker_selected" from="UI" to="." method="_on_blocker_selected"]
 [connection signal="start_wave_pressed" from="UI" to="." method="start_wave"]
 [connection signal="tower_selected" from="UI" to="." method="_on_tower_selected"]
-[connection signal="blocker_selected" from="UI" to="." method="_on_blocker_selected"]

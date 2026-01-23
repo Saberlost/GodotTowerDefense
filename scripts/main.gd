@@ -22,6 +22,7 @@ var paths = []
 @onready var enemy_container = $Enemies
 @onready var tower_container = $Towers
 @onready var ui = $UI
+@onready var camera = $Camera2D
 
 # Enemy scene
 var enemy_scenes = {
@@ -73,6 +74,9 @@ func add_map_section():
 	# Draw the section
 	draw_map_section(section_data)
 	queue_redraw()
+	
+	# Update camera to show the current map area
+	update_camera_position()
 
 func generate_section_layout(section_num):
 	var section = {
@@ -127,6 +131,7 @@ func draw_tile(pos: Vector2, color: Color):
 	tile.position = pos
 	tile.size = Vector2(TILE_SIZE - 2, TILE_SIZE - 2)
 	tile.color = color
+	tile.z_index = -10  # Render tiles below everything else
 	add_child(tile)
 
 func _draw():
@@ -136,6 +141,14 @@ func _draw():
 			draw_line(path[i] + Vector2(TILE_SIZE/2, TILE_SIZE/2), 
 					  path[i+1] + Vector2(TILE_SIZE/2, TILE_SIZE/2), 
 					  Color.YELLOW, 2.0)
+
+func update_camera_position():
+	if camera:
+		# Center camera on the current map sections
+		var map_width = MAP_SECTION_WIDTH * current_section * TILE_SIZE
+		var map_height = MAP_SECTION_HEIGHT * TILE_SIZE
+		camera.position = Vector2(map_width / 2.0, map_height / 2.0)
+		print("Camera positioned at ", camera.position, " for ", current_section, " sections")
 
 func start_wave():
 	current_wave += 1
@@ -168,6 +181,7 @@ func spawn_enemy(type: String):
 		enemy.connect("died", _on_enemy_died)
 		
 		enemy_container.add_child(enemy)
+		print("Spawned ", type, " at ", spawn_point, " with path of ", enemy.path.size(), " points")
 
 func _on_enemy_reached_end(enemy):
 	lives -= 1

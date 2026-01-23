@@ -145,8 +145,8 @@ func _draw():
 
 func update_camera_position():
 	if camera:
-		# Center camera on the entire map (all sections combined)
-		# This keeps the full playable area visible as the map expands
+		# Center camera on all accumulated sections (1 through current_section)
+		# As map expands, camera shifts right to keep the middle of the expanded map centered
 		# Formula: camera_x = (total_sections * section_width * tile_size) / 2
 		var map_width = MAP_SECTION_WIDTH * current_section * TILE_SIZE
 		var map_height = MAP_SECTION_HEIGHT * TILE_SIZE

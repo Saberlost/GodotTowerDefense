@@ -13,6 +13,8 @@ var attack_timer = 0.0
 @onready var sprite = $Sprite2D
 
 func _ready():
+	if attack_speed <= 0:
+		attack_speed = 1.0  # Default to prevent division by zero
 	attack_timer = 1.0 / attack_speed
 	if range_circle:
 		range_circle.scale = Vector2(range / 50.0, range / 50.0)

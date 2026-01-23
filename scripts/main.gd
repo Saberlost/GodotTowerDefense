@@ -4,6 +4,9 @@ extends Node2D
 const TILE_SIZE = 64
 const MAP_SECTION_WIDTH = 15
 const MAP_SECTION_HEIGHT = 10
+const BASE_ENEMY_COUNT = 5
+const ENEMY_SCALING_FACTOR = 2
+const DRAGON_UNLOCK_WAVE = 5
 
 var current_wave = 0
 var gold = 200
@@ -13,13 +16,11 @@ var current_section = 0
 
 # Spawner and paths
 var spawn_point = Vector2.ZERO
-var end_point = Vector2.ZERO
 var paths = []
 
 # References
 @onready var enemy_container = $Enemies
 @onready var tower_container = $Towers
-@ontml:parameter>
 @onready var ui = $UI
 
 # Enemy scene
@@ -67,7 +68,6 @@ func add_map_section():
 	
 	# Update spawn and end points
 	spawn_point = section_data.spawn
-	end_point = section_data.end
 	paths = section_data.paths
 	
 	# Draw the section
@@ -149,8 +149,8 @@ func start_wave():
 	update_ui()
 
 func spawn_wave_enemies():
-	var enemy_count = 5 + current_wave * 2
-	var enemy_types = ["goblin", "orc"] if current_wave < 5 else ["goblin", "orc", "dragon"]
+	var enemy_count = BASE_ENEMY_COUNT + current_wave * ENEMY_SCALING_FACTOR
+	var enemy_types = ["goblin", "orc"] if current_wave < DRAGON_UNLOCK_WAVE else ["goblin", "orc", "dragon"]
 	
 	for i in range(enemy_count):
 		await get_tree().create_timer(1.0).timeout
@@ -244,10 +244,16 @@ func place_path_blocker(pos: Vector2):
 	return false
 
 func recalculate_paths(blocked_pos: Vector2):
-	# Simple path recalculation - make enemies avoid blocked tile
+	# Improved path recalculation with bounds checking
 	for path in paths:
 		for i in range(len(path)):
 			if path[i].distance_to(blocked_pos) < TILE_SIZE:
-				# Offset the path point
-				path[i] += Vector2(0, TILE_SIZE)
+				# Try to offset the path point, ensuring it stays within bounds
+				var new_pos = path[i] + Vector2(0, TILE_SIZE)
+				# Check if new position is within map bounds
+				if new_pos.y / TILE_SIZE < MAP_SECTION_HEIGHT:
+					path[i] = new_pos
+				else:
+					# If can't go down, try going up
+					path[i] = path[i] - Vector2(0, TILE_SIZE)
 	queue_redraw()

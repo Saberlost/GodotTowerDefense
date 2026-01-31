@@ -13,11 +13,11 @@ A fantasy-themed tower defense game built with Godot Engine 4.2+
 
 #### Enemies
 - **Goblin**: Fast but weak (50 HP, 80 speed, 10 gold reward)
-- **Orc**: Slower but tankier (100 HP, 60 speed, 20 gold reward)
+- **Orc**: Slower but tankier (100 HP, 60 speed, 20 gold reward) - Features animated sprite with walk cycle
 - **Dragon**: Fast and very tanky (200 HP, 100 speed, 50 gold reward, appears from wave 5+)
 
 #### Towers
-- **Archer Tower** (50 gold): Basic ranged tower, fast attack rate (2 attacks/sec, 15 damage, 200 range)
+- **Archer Tower** (50 gold): Basic ranged tower with animated soldier sprite, shoots arrow projectiles (2 attacks/sec, 15 damage, 200 range)
 - **Mage Tower** (100 gold): Moderate damage with longer range (1 attack/sec, 25 damage, 250 range)
 - **Cannon Tower** (150 gold): Slow but powerful attacks (0.5 attacks/sec, 50 damage, 180 range)
 
@@ -51,7 +51,9 @@ A fantasy-themed tower defense game built with Godot Engine 4.2+
 ## Technical Details
 - Built with Godot Engine 4.2+
 - Uses GDScript for all game logic
-- Simple geometric shapes for visual representation
+- Features sprite-based graphics for orc enemy and archer tower
+- Animated sprites with walking and attack cycles
+- Visual arrow projectiles for archer tower
 - Expandable architecture for adding more content
 
 ## Project Structure
@@ -59,12 +61,20 @@ A fantasy-themed tower defense game built with Godot Engine 4.2+
 ├── scenes/
 │   ├── enemies/        # Enemy scene files
 │   ├── towers/         # Tower scene files
+│   ├── projectile.tscn # Arrow projectile scene
 │   └── main.tscn      # Main game scene
 ├── scripts/
 │   ├── main.gd        # Core game controller
 │   ├── enemy.gd       # Enemy behavior
 │   ├── tower.gd       # Tower behavior
+│   ├── projectile.gd  # Projectile behavior
 │   └── ui.gd          # UI management
+├── sprites/
+│   ├── Arrow(Projectile)/           # Arrow sprite assets
+│   ├── Characters(100x100)/         # Character sprite sheets
+│   │   ├── Orc/                     # Orc animations
+│   │   └── Soldier/                 # Soldier animations
+│   └── BaseSet.png                  # Tileset (unused currently)
 └── project.godot      # Godot project configuration
 ```
 

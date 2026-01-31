@@ -1,6 +1,8 @@
 extends Area2D
 
-var target: CharacterBody2D = null
+@export var max_distance = 1000.0
+
+var target: Node2D = null
 var damage: float = 10.0
 var speed: float = 300.0
 var direction: Vector2 = Vector2.ZERO
@@ -23,7 +25,7 @@ func _physics_process(delta):
 	# Remove if target is gone or too far from origin
 	if not target or not is_instance_valid(target):
 		queue_free()
-	elif global_position.distance_to(target.global_position) > 1000:
+	elif global_position.distance_to(target.global_position) > max_distance:
 		queue_free()
 
 func _on_body_entered(body):
@@ -32,7 +34,7 @@ func _on_body_entered(body):
 		body.take_damage(damage)
 		queue_free()
 
-func set_target(new_target: CharacterBody2D, new_damage: float):
+func set_target(new_target: Node2D, new_damage: float):
 	target = new_target
 	damage = new_damage
 	if target:

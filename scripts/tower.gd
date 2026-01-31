@@ -56,7 +56,7 @@ func attack_enemy(enemy):
 			sprite.flip_h = direction.x < 0
 		else:
 			# For other sprites (like Polygon2D), rotate as before
-			sprite.rotation = position.angle_to_point(enemy.position)
+			sprite.rotation = global_position.angle_to_point(enemy.global_position)
 	
 	# Shoot projectile or do direct damage
 	if use_projectiles and projectile_scene:

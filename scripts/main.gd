@@ -36,20 +36,71 @@ var enemy_scenes = {
 var selected_tower_type = ""
 var placing_blocker = false
 
+# Camera controls
+const CAMERA_ZOOM_MIN = 0.5
+const CAMERA_ZOOM_MAX = 2.0
+const CAMERA_ZOOM_STEP = 0.1
+const CAMERA_PAN_SPEED = 400.0
+var camera_drag_start = Vector2.ZERO
+var is_camera_dragging = false
+
 func _ready():
 	setup_initial_map()
 	update_ui()
 
+func _process(delta):
+	# Handle camera panning with WASD or Arrow keys
+	var camera_movement = Vector2.ZERO
+	if Input.is_action_pressed("ui_right"):
+		camera_movement.x += 1
+	if Input.is_action_pressed("ui_left"):
+		camera_movement.x -= 1
+	if Input.is_action_pressed("ui_down"):
+		camera_movement.y += 1
+	if Input.is_action_pressed("ui_up"):
+		camera_movement.y -= 1
+	
+	if camera_movement.length() > 0:
+		camera_movement = camera_movement.normalized()
+		camera.position += camera_movement * CAMERA_PAN_SPEED * delta / camera.zoom.x
+
 func _input(event):
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		if selected_tower_type != "":
-			var mouse_pos = get_global_mouse_position()
-			place_tower(selected_tower_type, mouse_pos)
-			selected_tower_type = ""
-		elif placing_blocker:
-			var mouse_pos = get_global_mouse_position()
-			place_path_blocker(mouse_pos)
-			placing_blocker = false
+	# Handle camera zoom with mouse wheel
+	if event is InputEventMouseButton:
+		if event.button_index == MOUSE_BUTTON_WHEEL_UP and event.pressed:
+			zoom_camera(CAMERA_ZOOM_STEP)
+		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN and event.pressed:
+			zoom_camera(-CAMERA_ZOOM_STEP)
+		# Handle middle mouse button drag
+		elif event.button_index == MOUSE_BUTTON_MIDDLE:
+			if event.pressed:
+				is_camera_dragging = true
+				camera_drag_start = event.position
+			else:
+				is_camera_dragging = false
+		# Handle tower/blocker placement
+		elif event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+			if selected_tower_type != "":
+				var mouse_pos = get_global_mouse_position()
+				place_tower(selected_tower_type, mouse_pos)
+				selected_tower_type = ""
+			elif placing_blocker:
+				var mouse_pos = get_global_mouse_position()
+				place_path_blocker(mouse_pos)
+				placing_blocker = false
+	
+	# Handle camera dragging
+	if event is InputEventMouseMotion and is_camera_dragging:
+		var drag_delta = camera_drag_start - event.position
+		camera.position += drag_delta / camera.zoom.x
+		camera_drag_start = event.position
+	
+	# Handle zoom with keyboard (+ and -)
+	if event is InputEventKey and event.pressed:
+		if event.keycode == KEY_EQUAL or event.keycode == KEY_PLUS or event.keycode == KEY_KP_ADD:
+			zoom_camera(CAMERA_ZOOM_STEP)
+		elif event.keycode == KEY_MINUS or event.keycode == KEY_KP_SUBTRACT:
+			zoom_camera(-CAMERA_ZOOM_STEP)
 
 func _on_tower_selected(tower_type: String):
 	selected_tower_type = tower_type
@@ -58,6 +109,12 @@ func _on_tower_selected(tower_type: String):
 func _on_blocker_selected():
 	placing_blocker = true
 	selected_tower_type = ""
+
+func zoom_camera(zoom_delta: float):
+	if camera:
+		var new_zoom = camera.zoom.x + zoom_delta
+		new_zoom = clamp(new_zoom, CAMERA_ZOOM_MIN, CAMERA_ZOOM_MAX)
+		camera.zoom = Vector2(new_zoom, new_zoom)
 
 func setup_initial_map():
 	# Create first map section

@@ -6,7 +6,7 @@ This document describes the newly added sprite sheets and how to use them in the
 
 Two new sprite sheet files have been added to the project:
 
-1. **sprits_monsters.jpg** - Monster/enemy sprite sheet
+1. **sprits_monsters.jpg** - Monster/enemy sprite sheet (Note: filename has typo, should be "sprites_monsters" but keeping as-is to avoid breaking references)
 2. **tilemap.jpg** - Tilemap/terrain sprite sheet
 
 Both files are 1024x1024 JPEG images located in the `sprites/` directory.

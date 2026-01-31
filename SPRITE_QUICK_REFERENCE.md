@@ -17,7 +17,7 @@ Quick answer to: "What type of sprites should I get to draw the map / path in a 
 
 ### Technical Specs
 ```
-Size: 64x64 pixels (matches TILE_SIZE in code)
+Size: 64x64 pixels (matches TILE_SIZE in scripts/main.gd)
 Format: PNG with transparency
 Style: Top-down, fantasy/medieval theme
 Tileability: Must tile seamlessly on all edges

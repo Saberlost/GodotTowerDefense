@@ -236,7 +236,7 @@ tiles/
 Replace the current ColorRect tile system:
 
 ```gdscript
-# Current system (in main.gd):
+# Current system (in scripts/main.gd):
 func draw_tile(pos: Vector2, color: Color):
     var tile = ColorRect.new()
     tile.position = pos
@@ -282,18 +282,18 @@ func draw_map_section(section_data):
 ### Preloading Textures
 
 ```gdscript
-# At top of main.gd
+# At top of scripts/main.gd
 const TILE_SIZE = 64
 
 # Preload tile textures
-var grass_texture = preload("res://assets/tiles/grass_01.png")
-var path_texture = preload("res://assets/tiles/path_dirt_01.png")
+var grass_texture = preload("res://assets/tiles/ground/grass_01.png")
+var path_texture = preload("res://assets/tiles/path/path_straight_h.png")
 
 # Use multiple grass variations for visual variety
 var grass_textures = [
-    preload("res://assets/tiles/grass_01.png"),
-    preload("res://assets/tiles/grass_02.png"),
-    preload("res://assets/tiles/grass_03.png"),
+    preload("res://assets/tiles/ground/grass_01.png"),
+    preload("res://assets/tiles/ground/grass_02.png"),
+    preload("res://assets/tiles/ground/grass_03.png"),
 ]
 
 func get_random_grass_texture():
@@ -356,8 +356,8 @@ GodotTowerDefense/
 │   │   │   ├── grass_02.png
 │   │   │   └── grass_03.png
 │   │   ├── path/
-│   │   │   ├── dirt_path_01.png
-│   │   │   └── dirt_path_02.png
+│   │   │   ├── path_straight_h.png
+│   │   │   └── path_straight_v.png
 │   │   └── decorations/
 │   │       ├── flower_01.png
 │   │       └── rock_01.png

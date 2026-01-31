@@ -48,9 +48,15 @@ func find_and_attack_enemy():
 		attack_enemy(closest_enemy)
 
 func attack_enemy(enemy):
-	# Rotate towards enemy
+	# Orient sprite towards enemy
 	if sprite:
-		sprite.rotation = position.angle_to_point(enemy.position)
+		# For AnimatedSprite2D, flip horizontally instead of rotating
+		if sprite is AnimatedSprite2D:
+			var direction = enemy.global_position - global_position
+			sprite.flip_h = direction.x < 0
+		else:
+			# For other sprites (like Polygon2D), rotate as before
+			sprite.rotation = position.angle_to_point(enemy.position)
 	
 	# Shoot projectile or do direct damage
 	if use_projectiles and projectile_scene:

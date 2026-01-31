@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3 uid="uid://biw1xyg2w6xlj"]
+[gd_scene load_steps=12 format=3 uid="uid://biw1xyg2w6xlj"]
 
 [ext_resource type="Script" uid="uid://cnsr1phy2v2lp" path="res://scripts/enemy.gd" id="1"]
 [ext_resource type="Texture2D" uid="uid://3e47pes6l6mg" path="res://sprites/Characters(100x100)/Orc/Orc/Orc-Walk.png" id="2"]
@@ -23,7 +23,19 @@ region = Rect2(300, 0, 100, 100)
 atlas = ExtResource("2")
 region = Rect2(400, 0, 100, 100)
 
-[sub_resource type="SpriteFrames" id="6"]
+[sub_resource type="AtlasTexture" id="6"]
+atlas = ExtResource("2")
+region = Rect2(500, 0, 100, 100)
+
+[sub_resource type="AtlasTexture" id="7"]
+atlas = ExtResource("2")
+region = Rect2(600, 0, 100, 100)
+
+[sub_resource type="AtlasTexture" id="8"]
+atlas = ExtResource("2")
+region = Rect2(700, 0, 100, 100)
+
+[sub_resource type="SpriteFrames" id="9"]
 animations = [{
 "frames": [{
 "duration": 1.0,
@@ -40,6 +52,15 @@ animations = [{
 }, {
 "duration": 1.0,
 "texture": SubResource("5")
+}, {
+"duration": 1.0,
+"texture": SubResource("6")
+}, {
+"duration": 1.0,
+"texture": SubResource("7")
+}, {
+"duration": 1.0,
+"texture": SubResource("8")
 }],
 "loop": true,
 "name": &"walk",
@@ -55,7 +76,7 @@ max_health = 100.0
 gold_reward = 20
 
 [node name="Sprite2D" type="AnimatedSprite2D" parent="."]
-sprite_frames = SubResource("6")
+sprite_frames = SubResource("9")
 animation = &"walk"
 autoplay = "walk"
 

@@ -1,7 +1,58 @@
-[gd_scene load_steps=3 format=3 uid="uid://co7sxrq7e2qyf"]
+[gd_scene load_steps=10 format=3 uid="uid://co7sxrq7e2qyf"]
 
 [ext_resource type="Script" uid="uid://bcnchke4v53s0" path="res://scripts/tower.gd" id="1"]
 [ext_resource type="PackedScene" uid="uid://cpj4nry5yka3w" path="res://scenes/projectile.tscn" id="2"]
+[ext_resource type="Texture2D" uid="uid://cotv83gs6i56c" path="res://sprites/Characters(100x100)/Soldier/Soldier with shadows/Soldier-Attack01.png" id="3"]
+
+[sub_resource type="AtlasTexture" id="1"]
+atlas = ExtResource("3")
+region = Rect2(0, 0, 100, 100)
+
+[sub_resource type="AtlasTexture" id="2"]
+atlas = ExtResource("3")
+region = Rect2(100, 0, 100, 100)
+
+[sub_resource type="AtlasTexture" id="3"]
+atlas = ExtResource("3")
+region = Rect2(200, 0, 100, 100)
+
+[sub_resource type="AtlasTexture" id="4"]
+atlas = ExtResource("3")
+region = Rect2(300, 0, 100, 100)
+
+[sub_resource type="AtlasTexture" id="5"]
+atlas = ExtResource("3")
+region = Rect2(400, 0, 100, 100)
+
+[sub_resource type="AtlasTexture" id="6"]
+atlas = ExtResource("3")
+region = Rect2(500, 0, 100, 100)
+
+[sub_resource type="SpriteFrames" id="7"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("1")
+}, {
+"duration": 1.0,
+"texture": SubResource("2")
+}, {
+"duration": 1.0,
+"texture": SubResource("3")
+}, {
+"duration": 1.0,
+"texture": SubResource("4")
+}, {
+"duration": 1.0,
+"texture": SubResource("5")
+}, {
+"duration": 1.0,
+"texture": SubResource("6")
+}],
+"loop": true,
+"name": &"attack",
+"speed": 6.0
+}]
 
 [node name="ArcherTower" type="Node2D"]
 script = ExtResource("1")
@@ -11,9 +62,10 @@ range = 200.0
 use_projectiles = true
 projectile_scene = ExtResource("2")
 
-[node name="Sprite2D" type="Polygon2D" parent="."]
-color = Color(0.6, 0.4, 0.2, 1)
-polygon = PackedVector2Array(-20, -30, 0, -35, 20, -30, 20, 15, 0, 20, -20, 15)
+[node name="Sprite2D" type="AnimatedSprite2D" parent="."]
+sprite_frames = SubResource("7")
+animation = &"attack"
+autoplay = "attack"
 
 [node name="RangeCircle" type="Polygon2D" parent="."]
 color = Color(0, 1, 0, 0.1)

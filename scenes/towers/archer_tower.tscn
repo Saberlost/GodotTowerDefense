@@ -1,12 +1,15 @@
-[gd_scene load_steps=2 format=3 uid="uid://co7sxrq7e2qyf"]
+[gd_scene load_steps=3 format=3 uid="uid://co7sxrq7e2qyf"]
 
 [ext_resource type="Script" uid="uid://bcnchke4v53s0" path="res://scripts/tower.gd" id="1"]
+[ext_resource type="PackedScene" uid="uid://cpj4nry5yka3w" path="res://scenes/projectile.tscn" id="2"]
 
 [node name="ArcherTower" type="Node2D"]
 script = ExtResource("1")
 damage = 15.0
 attack_speed = 2.0
 range = 200.0
+use_projectiles = true
+projectile_scene = ExtResource("2")
 
 [node name="Sprite2D" type="Polygon2D" parent="."]
 color = Color(0.6, 0.4, 0.2, 1)

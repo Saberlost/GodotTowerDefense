@@ -1,6 +1,50 @@
-[gd_scene load_steps=2 format=3 uid="uid://biw1xyg2w6xlj"]
+[gd_scene load_steps=9 format=3 uid="uid://biw1xyg2w6xlj"]
 
 [ext_resource type="Script" uid="uid://cnsr1phy2v2lp" path="res://scripts/enemy.gd" id="1"]
+[ext_resource type="Texture2D" uid="uid://3e47pes6l6mg" path="res://sprites/Characters(100x100)/Orc/Orc/Orc-Walk.png" id="2"]
+
+[sub_resource type="AtlasTexture" id="1"]
+atlas = ExtResource("2")
+region = Rect2(0, 0, 100, 100)
+
+[sub_resource type="AtlasTexture" id="2"]
+atlas = ExtResource("2")
+region = Rect2(100, 0, 100, 100)
+
+[sub_resource type="AtlasTexture" id="3"]
+atlas = ExtResource("2")
+region = Rect2(200, 0, 100, 100)
+
+[sub_resource type="AtlasTexture" id="4"]
+atlas = ExtResource("2")
+region = Rect2(300, 0, 100, 100)
+
+[sub_resource type="AtlasTexture" id="5"]
+atlas = ExtResource("2")
+region = Rect2(400, 0, 100, 100)
+
+[sub_resource type="SpriteFrames" id="6"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("1")
+}, {
+"duration": 1.0,
+"texture": SubResource("2")
+}, {
+"duration": 1.0,
+"texture": SubResource("3")
+}, {
+"duration": 1.0,
+"texture": SubResource("4")
+}, {
+"duration": 1.0,
+"texture": SubResource("5")
+}],
+"loop": true,
+"name": &"walk",
+"speed": 8.0
+}]
 
 [node name="Orc" type="CharacterBody2D"]
 collision_layer = 2
@@ -10,9 +54,10 @@ speed = 60.0
 max_health = 100.0
 gold_reward = 20
 
-[node name="Sprite2D" type="Polygon2D" parent="."]
-color = Color(0.4, 0.2, 0, 1)
-polygon = PackedVector2Array(-20, -25, 0, -30, 20, -25, 20, 25, -20, 25)
+[node name="Sprite2D" type="AnimatedSprite2D" parent="."]
+sprite_frames = SubResource("6")
+animation = &"walk"
+autoplay = "walk"
 
 [node name="CollisionShape2D" type="CollisionPolygon2D" parent="."]
 polygon = PackedVector2Array(-20, -25, 0, -30, 20, -25, 20, 25, -20, 25)

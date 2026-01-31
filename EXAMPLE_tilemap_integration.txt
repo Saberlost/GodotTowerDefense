@@ -1,0 +1,120 @@
+# Example: Tilemap Integration in main.gd
+# This shows the modifications needed to use tilemap.jpg instead of ColorRect tiles
+#
+# INSTRUCTIONS:
+# 1. Open tilemap.jpg in Godot to identify grass and path tile locations
+# 2. Update the sprite positions in sprite_helper.gd
+# 3. Apply the changes shown below to scripts/main.gd
+
+## Changes to make in scripts/main.gd:
+
+### 1. Add at the top of the file (after existing preloads):
+# Sprite helper for tilemap
+var sprite_helper = preload("res://scripts/sprite_helper.gd").new()
+
+# Preload tile textures for performance
+var grass_tiles = []
+var path_tile = null
+
+### 2. Add to _ready() function (after setup_initial_map()):
+func _ready():
+	# Existing code
+	setup_initial_map()
+	update_ui()
+	
+	# NEW: Preload tile sprites
+	_preload_tile_sprites()
+
+### 3. Add new function to preload sprites:
+func _preload_tile_sprites():
+	# Load grass tile variations for visual variety
+	for i in range(3):  # Assuming 3 grass variants
+		grass_tiles.append(sprite_helper.get_grass_tile(i))
+	
+	# Load path tile
+	path_tile = sprite_helper.get_path_tile()
+
+### 4. Replace draw_tile() function:
+
+# OLD VERSION (using ColorRect):
+# func draw_tile(pos: Vector2, color: Color):
+# 	var tile = ColorRect.new()
+# 	tile.position = pos
+# 	tile.size = Vector2(TILE_SIZE - 2, TILE_SIZE - 2)
+# 	tile.color = color
+# 	tile.z_index = -10
+# 	add_child(tile)
+
+# NEW VERSION (using Sprite2D with tilemap.jpg):
+func draw_tile(pos: Vector2, tile_type: String):
+	var sprite = Sprite2D.new()
+	
+	# Select appropriate texture based on type
+	if tile_type == "grass":
+		# Use random grass variant for visual variety
+		sprite.texture = grass_tiles[randi() % grass_tiles.size()]
+	elif tile_type == "path":
+		sprite.texture = path_tile
+	else:
+		# Fallback to first grass tile if unknown type
+		sprite.texture = grass_tiles[0]
+	
+	# Center the sprite on the tile position
+	sprite.position = pos + Vector2(TILE_SIZE / 2, TILE_SIZE / 2)
+	sprite.z_index = -10  # Render tiles below everything else
+	add_child(sprite)
+
+### 5. Update draw_map_section() to pass tile type instead of color:
+
+# OLD VERSION:
+# func draw_map_section(section_data):
+# 	# Draw ground tiles
+# 	for x in range(MAP_SECTION_WIDTH):
+# 		for y in range(MAP_SECTION_HEIGHT):
+# 			var tile_pos = Vector2(
+# 				MAP_SECTION_WIDTH * (section_data.id - 1) + x,
+# 				y
+# 			) * TILE_SIZE
+# 			draw_tile(tile_pos, Color.DARK_GREEN)
+# 	
+# 	# Draw paths
+# 	for path in section_data.paths:
+# 		for point in path:
+# 			draw_tile(point, Color.SANDY_BROWN)
+
+# NEW VERSION:
+func draw_map_section(section_data):
+	# Draw ground tiles with sprite
+	for x in range(MAP_SECTION_WIDTH):
+		for y in range(MAP_SECTION_HEIGHT):
+			var tile_pos = Vector2(
+				MAP_SECTION_WIDTH * (section_data.id - 1) + x,
+				y
+			) * TILE_SIZE
+			draw_tile(tile_pos, "grass")  # Changed from Color.DARK_GREEN
+	
+	# Draw paths with sprite
+	for path in section_data.paths:
+		for point in path:
+			draw_tile(point, "path")  # Changed from Color.SANDY_BROWN
+
+### Summary of Changes:
+# - Added sprite_helper instance
+# - Added _preload_tile_sprites() function
+# - Changed draw_tile() to accept tile_type (String) instead of color (Color)
+# - Changed draw_tile() to create Sprite2D instead of ColorRect
+# - Updated draw_map_section() to pass "grass" and "path" strings instead of colors
+
+### Benefits:
+# - More visually appealing terrain
+# - Support for multiple grass variations (adds visual variety)
+# - Easy to extend with more tile types (decorations, different path styles, etc.)
+# - Maintains same performance characteristics
+
+### Testing:
+# After making these changes:
+# 1. Open the project in Godot
+# 2. Run the game
+# 3. Verify that grass and path tiles show proper textures instead of colored rectangles
+# 4. Start a wave and verify tiles render correctly as map expands
+# 5. Test camera zoom - sprites should scale properly

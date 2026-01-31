@@ -1,0 +1,100 @@
+# Sprite Sheet Configuration Guide
+# This file contains example mappings for the new sprite sheets
+# Update the coordinates after visually inspecting the sprite sheets in Godot
+
+## sprits_monsters.jpg Configuration
+
+# Assuming a 10x10 grid layout (100x100 pixel sprites in a 1024x1024 image)
+# Adjust these coordinates based on actual visual inspection
+
+# Example sprite locations (row, col format starting from 0,0 at top-left):
+# Each sprite is assumed to be 100x100 pixels (adjust if different)
+
+### Goblin Sprite
+# Location: Row 0, Column 0
+# Atlas Region: Rect2(0, 0, 100, 100)
+
+### Dragon Sprite  
+# Location: Row 0, Column 1 (example)
+# Atlas Region: Rect2(100, 0, 100, 100)
+
+### Additional Monster Sprites
+# Location: TBD - inspect sprite sheet
+# Atlas Regions: TBD
+
+---
+
+## tilemap.jpg Configuration
+
+# Assuming a 16x16 grid layout (64x64 pixel tiles in a 1024x1024 image)
+# Adjust these coordinates based on actual visual inspection
+
+# Example tile locations (row, col format starting from 0,0 at top-left):
+# Each tile is assumed to be 64x64 pixels (matching TILE_SIZE in code)
+
+### Grass/Ground Tiles
+# Grass Tile 1: Row 0, Column 0 -> Rect2(0, 0, 64, 64)
+# Grass Tile 2: Row 0, Column 1 -> Rect2(64, 0, 64, 64)
+# Grass Tile 3: Row 0, Column 2 -> Rect2(128, 0, 64, 64)
+
+### Path Tiles
+# Path Horizontal: Row 1, Column 0 -> Rect2(0, 64, 64, 64)
+# Path Vertical: Row 1, Column 1 -> Rect2(64, 64, 64, 64)
+# Path Corner TL: Row 1, Column 2 -> Rect2(128, 64, 64, 64)
+# Path Corner TR: Row 1, Column 3 -> Rect2(192, 64, 64, 64)
+# Path Corner BL: Row 1, Column 4 -> Rect2(256, 64, 64, 64)
+# Path Corner BR: Row 1, Column 5 -> Rect2(320, 64, 64, 64)
+
+### Decoration Tiles (Optional)
+# Rock: Row 2, Column 0 -> Rect2(0, 128, 64, 64)
+# Flower: Row 2, Column 1 -> Rect2(64, 128, 64, 64)
+# Bush: Row 2, Column 2 -> Rect2(128, 128, 64, 64)
+
+---
+
+## How to Use This Configuration
+
+### For Enemy Sprites (sprits_monsters.jpg):
+
+1. Create an AtlasTexture resource in Godot:
+   - Right-click in FileSystem panel
+   - Create New Resource -> AtlasTexture
+   - Set the atlas property to sprits_monsters.jpg
+   - Set the region to the coordinates listed above
+
+2. Use the AtlasTexture in enemy scene:
+   - Open the enemy .tscn file
+   - Replace Polygon2D with Sprite2D
+   - Assign the AtlasTexture to the texture property
+
+### For Tilemap Sprites (tilemap.jpg):
+
+1. Create AtlasTexture resources for each tile type:
+   - Create separate AtlasTexture for grass, path, etc.
+   - Set regions according to the coordinates above
+
+2. Update main.gd to use sprites:
+   - Preload the AtlasTexture resources
+   - Modify draw_tile() to create Sprite2D instead of ColorRect
+   - Pass appropriate texture based on tile type
+
+3. Alternative (Advanced): Create TileSet resource:
+   - Create a new TileSet resource
+   - Add tilemap.jpg as the source
+   - Define each tile with its region
+   - Use TileMap node in main scene
+
+---
+
+## Next Steps
+
+1. **Open Godot Editor** and load this project
+2. **Open sprits_monsters.jpg** in the texture inspector
+3. **Identify the actual layout** (grid size, sprite dimensions)
+4. **Update this file** with correct coordinates
+5. **Create AtlasTexture resources** for each sprite/tile
+6. **Implement in scenes** using the coordinates documented here
+
+## Example Code Implementation
+
+See `scripts/sprite_helper.gd` for helper functions to load and use these sprites.

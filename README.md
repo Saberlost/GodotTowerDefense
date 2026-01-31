@@ -54,6 +54,9 @@ A fantasy-themed tower defense game built with Godot Engine 4.2+
 - Simple geometric shapes for visual representation
 - Expandable architecture for adding more content
 
+## Documentation
+- **[SPRITE_GUIDE.md](SPRITE_GUIDE.md)**: Comprehensive guide for replacing geometric shapes with sprite assets
+
 ## Project Structure
 ```
 ├── scenes/
@@ -75,4 +78,4 @@ A fantasy-themed tower defense game built with Godot Engine 4.2+
 - Victory conditions
 - Save/load functionality
 - Sound effects and music
-- Improved visual assets
+- Improved visual assets (see [SPRITE_GUIDE.md](SPRITE_GUIDE.md) for sprite recommendations)

@@ -42,6 +42,10 @@ A fantasy-themed tower defense game built with Godot Engine 4.2+
 
 ## Game Controls
 - **Left Click**: Place selected tower or blocker
+- **Middle Mouse Button Drag**: Pan camera to see different parts of the map
+- **Mouse Wheel**: Zoom in/out (0.5x to 2.0x)
+- **Arrow Keys / WASD**: Pan camera to view the full path
+- **+/- Keys**: Zoom in/out
 - **UI Buttons**: Select towers, start waves, view stats
 
 ## Technical Details

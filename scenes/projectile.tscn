@@ -1,0 +1,18 @@
+[gd_scene load_steps=4 format=3 uid="uid://cpj4nry5yka3w"]
+
+[ext_resource type="Texture2D" uid="uid://dqjpqjkxabusy" path="res://sprites/Arrow(Projectile)/Arrow01(32x32).png" id="1"]
+[ext_resource type="Script" uid="uid://d1xfjjm27tg5j" path="res://scripts/projectile.gd" id="2"]
+
+[sub_resource type="CircleShape2D" id="1"]
+radius = 8.0
+
+[node name="Projectile" type="Area2D"]
+collision_layer = 4
+collision_mask = 2
+script = ExtResource("2")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("1")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("1")

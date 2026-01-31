@@ -4,6 +4,8 @@ extends Node2D
 @export var attack_speed = 1.0  # attacks per second
 @export var range = 150.0
 @export var projectile_speed = 300.0
+@export var use_projectiles = false
+@export var projectile_scene: PackedScene = null
 
 var enemy_container = null
 var current_target = null
@@ -46,10 +48,30 @@ func find_and_attack_enemy():
 		attack_enemy(closest_enemy)
 
 func attack_enemy(enemy):
-	# Simple direct damage (can be extended with projectiles)
-	if enemy.has_method("take_damage"):
-		enemy.take_damage(damage)
-	
-	# Rotate towards enemy
+	# Orient sprite towards enemy
 	if sprite:
-		sprite.rotation = position.angle_to_point(enemy.position)
+		# For AnimatedSprite2D, flip horizontally instead of rotating
+		if sprite is AnimatedSprite2D:
+			var direction = enemy.global_position - global_position
+			sprite.flip_h = direction.x < 0
+		else:
+			# For other sprites (like Polygon2D), rotate as before
+			sprite.rotation = global_position.angle_to_point(enemy.global_position)
+	
+	# Shoot projectile or do direct damage
+	if use_projectiles and projectile_scene:
+		shoot_projectile(enemy)
+	else:
+		# Simple direct damage
+		if enemy.has_method("take_damage"):
+			enemy.take_damage(damage)
+
+func shoot_projectile(enemy):
+	if not projectile_scene:
+		return
+	
+	var projectile = projectile_scene.instantiate()
+	get_tree().root.add_child(projectile)
+	projectile.global_position = global_position
+	projectile.set_target(enemy, damage)
+	projectile.speed = projectile_speed

@@ -1,0 +1,58 @@
+# Example: Dragon Scene with sprits_monsters.jpg Integration
+# This shows how to modify scenes/enemies/dragon.tscn to use the new sprite sheet
+# 
+# INSTRUCTIONS:
+# 1. Open sprits_monsters.jpg in Godot to identify the dragon sprite location
+# 2. Update the AtlasTexture region in the [sub_resource type="AtlasTexture" id="1"] section below
+# 3. Replace the content of scenes/enemies/dragon.tscn with this modified version
+#
+# Current implementation uses Polygon2D (red hexagon shape)
+# This example replaces it with a Sprite2D using sprits_monsters.jpg
+
+[gd_scene load_steps=3 format=3 uid="uid://c4jv0yfgdm1ha"]
+
+[ext_resource type="Script" uid="uid://cnsr1phy2v2lp" path="res://scripts/enemy.gd" id="1"]
+[ext_resource type="Texture2D" uid="uid://ca8gm6yl0utws" path="res://sprites/sprits_monsters.jpg" id="2"]
+
+# TODO: Update this region after inspecting the sprite sheet!
+# This is a GUESS - the dragon sprite might be at position (100,0) with size 100x100
+# Adjust the Rect2 values based on actual sprite location
+[sub_resource type="AtlasTexture" id="1"]
+atlas = ExtResource("2")
+region = Rect2(100, 0, 100, 100)  # UPDATE THIS: (x, y, width, height) after visual inspection
+
+[node name="Dragon" type="CharacterBody2D"]
+collision_layer = 2
+collision_mask = 0
+script = ExtResource("1")
+speed = 100.0
+max_health = 200.0
+gold_reward = 50
+
+# CHANGED: Polygon2D replaced with Sprite2D
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = SubResource("1")
+# Optional: scale the sprite if it's not the right size
+# Dragons are typically larger, so might need scale adjustment
+# scale = Vector2(1.2, 1.2)  # Uncomment if sprite needs to be larger
+
+[node name="CollisionShape2D" type="CollisionPolygon2D" parent="."]
+# Keep the same collision shape for now
+# Adjust if needed based on actual sprite size
+polygon = PackedVector2Array(-30, 0, -10, -30, 10, -30, 30, 0, 10, 30, -10, 30)
+
+[node name="HealthBar" type="ProgressBar" parent="."]
+offset_left = -30.0
+offset_top = -45.0
+offset_right = 30.0
+offset_bottom = -40.0
+value = 100.0
+show_percentage = false
+
+# NOTES:
+# - If the sprite is animated (multiple frames), use AnimatedSprite2D instead
+# - Dragons often have larger, more detailed sprites
+# - May need to adjust scale to make dragon appear larger than other enemies
+# - Follow the pattern from scenes/enemies/orc.tscn for animated sprites
+# - Adjust health bar position if sprite size is different
+# - Update collision shape to match sprite shape more closely if needed

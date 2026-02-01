@@ -56,9 +56,38 @@ A fantasy-themed tower defense game built with Godot Engine 4.2+
 - Visual arrow projectiles for archer tower
 - Expandable architecture for adding more content
 
+## New Sprite Sheets (Ready for Integration)
+Two new sprite sheets have been added to the project and are ready for integration:
+
+### sprits_monsters.jpg
+- **Size**: 1024x1024 pixels
+- **Purpose**: Monster and enemy sprites
+- **Status**: Import file configured, ready to use
+- **Intended Use**: Replace Polygon2D shapes for Goblin and Dragon enemies
+- **Documentation**: See [SPRITE_SHEETS_NEW.md](SPRITE_SHEETS_NEW.md) for integration guide
+
+### tilemap.jpg  
+- **Size**: 1024x1024 pixels
+- **Purpose**: Terrain tiles (grass, paths, decorations)
+- **Status**: Import file configured, ready to use
+- **Intended Use**: Replace ColorRect tiles with proper sprite textures
+- **Documentation**: See [SPRITE_SHEETS_NEW.md](SPRITE_SHEETS_NEW.md) and [EXAMPLE_tilemap_integration.txt](EXAMPLE_tilemap_integration.txt)
+
+**Next Steps for Integration**:
+1. Open the project in Godot Editor
+2. Run `scripts/analyze_sprites.gd` (File > Run) to analyze sprite sheet layout
+3. Update sprite coordinates in `scripts/sprite_helper.gd`
+4. Apply example implementations from `EXAMPLE_*.tscn` and `EXAMPLE_*.txt` files
+5. Test and refine sprite usage
+
+See [SPRITE_SHEETS_NEW.md](SPRITE_SHEETS_NEW.md) for detailed instructions.
+
 ## Documentation
 - **[SPRITE_QUICK_REFERENCE.md](SPRITE_QUICK_REFERENCE.md)**: Quick answer for sprite recommendations (start here!)
 - **[SPRITE_GUIDE.md](SPRITE_GUIDE.md)**: Comprehensive guide for replacing geometric shapes with sprite assets
+- **[SPRITE_SHEETS_NEW.md](SPRITE_SHEETS_NEW.md)**: Guide for the newly added sprite sheets (sprits_monsters.jpg and tilemap.jpg)
+- **[SPRITE_COORDINATES.txt](SPRITE_COORDINATES.txt)**: Configuration for sprite sheet tile coordinates
+- **[EXAMPLE_tilemap_integration.txt](EXAMPLE_tilemap_integration.txt)**: Example code for integrating tilemap sprites
 
 ## Project Structure
 ```
@@ -78,7 +107,9 @@ A fantasy-themed tower defense game built with Godot Engine 4.2+
 │   ├── Characters(100x100)/         # Character sprite sheets
 │   │   ├── Orc/                     # Orc animations
 │   │   └── Soldier/                 # Soldier animations
-│   └── BaseSet.png                  # Tileset (unused currently)
+│   ├── BaseSet.png                  # Tileset (unused currently)
+│   ├── sprits_monsters.jpg          # NEW: Monster/enemy sprite sheet
+│   └── tilemap.jpg                  # NEW: Tilemap/terrain sprite sheet
 └── project.godot      # Godot project configuration
 ```
 

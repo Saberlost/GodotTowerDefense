@@ -8,6 +8,7 @@ extends Node2D
 @export var projectile_scene: PackedScene = null
 
 var enemy_container = null
+var projectile_container = null
 var current_target = null
 var attack_timer = 0.0
 
@@ -30,6 +31,9 @@ func _physics_process(delta):
 
 func set_enemy_container(container):
 	enemy_container = container
+
+func set_projectile_container(container):
+	projectile_container = container
 
 func find_and_attack_enemy():
 	if not enemy_container:
@@ -71,7 +75,10 @@ func shoot_projectile(enemy):
 		return
 	
 	var projectile = projectile_scene.instantiate()
-	get_tree().root.add_child(projectile)
+	if projectile_container:
+		projectile_container.add_child(projectile)
+	else:
+		get_tree().current_scene.add_child(projectile)
 	projectile.global_position = global_position
 	projectile.set_target(enemy, damage)
 	projectile.speed = projectile_speed

@@ -1,6 +1,22 @@
-[gd_scene load_steps=2 format=3 uid="uid://c4jv0yfgdm1ha"]
+[gd_scene load_steps=5 format=3 uid="uid://c4jv0yfgdm1ha"]
 
 [ext_resource type="Script" uid="uid://cnsr1phy2v2lp" path="res://scripts/enemy.gd" id="1"]
+[ext_resource type="Texture2D" uid="uid://ca8gm6yl0utws" path="res://sprites/sprits_monsters.jpg" id="2_7cpjs"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_mm4vl"]
+atlas = ExtResource("2_7cpjs")
+region = Rect2(92, 360, 233, 221)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_trrk7"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_mm4vl")
+}],
+"loop": true,
+"name": &"default",
+"speed": 5.0
+}]
 
 [node name="Dragon" type="CharacterBody2D"]
 collision_layer = 2
@@ -10,9 +26,10 @@ speed = 100.0
 max_health = 200.0
 gold_reward = 50
 
-[node name="Sprite2D" type="Polygon2D" parent="."]
+[node name="Sprite2Dold" type="Polygon2D" parent="."]
 color = Color(0.8, 0, 0, 1)
 polygon = PackedVector2Array(-30, 0, -10, -30, 10, -30, 30, 0, 10, 30, -10, 30)
+uv = PackedVector2Array(-30, 0, -10, -30, 10, -30, 30, 0, 10, 30, -10, 30)
 
 [node name="CollisionShape2D" type="CollisionPolygon2D" parent="."]
 polygon = PackedVector2Array(-30, 0, -10, -30, 10, -30, 30, 0, 10, 30, -10, 30)
@@ -24,3 +41,7 @@ offset_right = 30.0
 offset_bottom = -40.0
 value = 100.0
 show_percentage = false
+
+[node name="Sprite2D" type="AnimatedSprite2D" parent="."]
+scale = Vector2(0.28, 0.28)
+sprite_frames = SubResource("SpriteFrames_trrk7")

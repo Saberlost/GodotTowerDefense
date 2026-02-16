@@ -78,13 +78,8 @@ text = "Mage (100g)"
 layout_mode = 2
 text = "Cannon (150g)"
 
-[node name="BlockerButton" type="Button" parent="UI/MarginContainer/VBoxContainer/TowerButtons"]
-layout_mode = 2
-text = "Path Blocker (300g)"
-
 [node name="GroundMap" type="TileMapLayer" parent="."]
 tile_set = ExtResource("3_sugp2")
 
-[connection signal="blocker_selected" from="UI" to="." method="_on_blocker_selected"]
 [connection signal="start_wave_pressed" from="UI" to="." method="start_wave"]
 [connection signal="tower_selected" from="UI" to="." method="_on_tower_selected"]

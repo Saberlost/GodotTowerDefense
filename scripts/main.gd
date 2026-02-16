@@ -4,57 +4,86 @@ extends Node2D
 const TILE_SIZE = 64
 const MAP_SECTION_WIDTH = 15
 const MAP_SECTION_HEIGHT = 10
+const MAP_FILL_MARGIN_TILES = 2
+const MAP_TOP_OFFSET_TILES = 2
 const BASE_ENEMY_COUNT = 5
 const ENEMY_SCALING_FACTOR = 2
 const DRAGON_UNLOCK_WAVE = 5
-const DEBUG_MODE = false  # Set to true to enable debug output
-const PATH_BUILD_BLOCK_FACTOR = 0.8
+const DEBUG_MODE = false
+const DEBUG_INFINITE_RESOURCES = true
+const DEBUG_STARTING_GOLD = 999999
+const DEBUG_STARTING_LIVES = 999999
+const PLAY_AREA_BORDER_COLOR = Color(0.95, 0.95, 0.95, 0.95)
+const PLAY_AREA_BORDER_WIDTH = 3.0
 
-var current_wave = 0
-var gold = 200
-var lives = 20
-var map_sections = []
-var current_section = 0
-
-# Spawner and paths
-var spawn_point = Vector2.ZERO
-var paths = []
-
-# References
-@onready var enemy_container = $Enemies
-@onready var tower_container = $Towers
-@onready var projectile_container = $Projectiles
-@onready var path_overlay = $PathOverlay
-@onready var ui = $UI
-@onready var camera = $Camera2D
-@onready var ground_map := $GroundMap
-
-
-# Enemy scene
-var enemy_scenes = {
-	"goblin": preload("res://scenes/enemies/goblin.tscn"),
-	"orc": preload("res://scenes/enemies/orc.tscn"),
-	"dragon": preload("res://scenes/enemies/dragon.tscn")
-}
-
-# Tower placement
-var selected_tower_type = ""
-var placing_blocker = false
+# Tile atlas values for GroundMap.tres
+const GROUND_SOURCE_ID = 0
+const GROUND_ATLAS_COORDS = Vector2i(1, 1)
 
 # Camera controls
 const CAMERA_ZOOM_MIN = 0.5
 const CAMERA_ZOOM_MAX = 2.0
 const CAMERA_ZOOM_STEP = 0.1
 const CAMERA_PAN_SPEED = 400.0
+
+# Pathfinding directions (4-way grid)
+const CARDINAL_DIRS = [
+	Vector2i(1, 0),
+	Vector2i(-1, 0),
+	Vector2i(0, 1),
+	Vector2i(0, -1)
+]
+
+var current_wave = 0
+var gold = 200
+var lives = 20
+var selected_tower_type = ""
+var tower_cells: Dictionary = {}
+var map_grid_width = MAP_SECTION_WIDTH
+var map_grid_height = MAP_SECTION_HEIGHT
+
 var camera_drag_start = Vector2.ZERO
 var is_camera_dragging = false
 
+@onready var enemy_container = $Enemies
+@onready var tower_container = $Towers
+@onready var projectile_container = $Projectiles
+@onready var ui = $UI
+@onready var camera = $Camera2D
+@onready var ground_map: TileMapLayer = $GroundMap
+
+var enemy_scenes = {
+	"goblin": preload("res://scenes/enemies/goblin.tscn"),
+	"orc": preload("res://scenes/enemies/orc.tscn"),
+	"dragon": preload("res://scenes/enemies/dragon.tscn")
+}
+
 func _ready():
+	randomize()
+	if DEBUG_INFINITE_RESOURCES:
+		gold = DEBUG_STARTING_GOLD
+		lives = DEBUG_STARTING_LIVES
 	setup_initial_map()
 	update_ui()
+	queue_redraw()
+
+func _notification(what):
+	if what == NOTIFICATION_WM_SIZE_CHANGED:
+		update_map_size_from_viewport()
+		draw_base_map()
+		update_camera_position()
+		queue_redraw()
+
+func _draw():
+	var cell_size = get_grid_cell_size()
+	var map_top_offset_pixels = MAP_TOP_OFFSET_TILES * cell_size
+	var border_rect = Rect2(
+		Vector2(0, map_top_offset_pixels),
+		Vector2(map_grid_width * cell_size, map_grid_height * cell_size)
+	)
+	draw_rect(border_rect, PLAY_AREA_BORDER_COLOR, false, PLAY_AREA_BORDER_WIDTH)
 
 func _process(delta):
-	# Handle camera panning with WASD or Arrow keys
 	var camera_movement = Vector2.ZERO
 	if Input.is_action_pressed("ui_right"):
 		camera_movement.x += 1
@@ -70,37 +99,28 @@ func _process(delta):
 		camera.position += camera_movement * CAMERA_PAN_SPEED * delta / camera.zoom.x
 
 func _input(event):
-	# Handle camera zoom with mouse wheel
 	if event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_WHEEL_UP and event.pressed:
 			zoom_camera(CAMERA_ZOOM_STEP)
 		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN and event.pressed:
 			zoom_camera(-CAMERA_ZOOM_STEP)
-		# Handle middle mouse button drag
 		elif event.button_index == MOUSE_BUTTON_MIDDLE:
 			if event.pressed:
 				is_camera_dragging = true
 				camera_drag_start = event.position
 			else:
 				is_camera_dragging = false
-		# Handle tower/blocker placement
 		elif event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 			if selected_tower_type != "":
 				var mouse_pos = get_global_mouse_position()
 				if place_tower(selected_tower_type, mouse_pos):
 					selected_tower_type = ""
-			elif placing_blocker:
-				var mouse_pos = get_global_mouse_position()
-				if place_path_blocker(mouse_pos):
-					placing_blocker = false
 	
-	# Handle camera dragging
 	if event is InputEventMouseMotion and is_camera_dragging:
 		var drag_delta = camera_drag_start - event.position
 		camera.position += drag_delta / camera.zoom.x
 		camera_drag_start = event.position
 	
-	# Handle zoom with keyboard (+ and -)
 	if event is InputEventKey and event.pressed:
 		if event.keycode == KEY_EQUAL or event.keycode == KEY_PLUS or event.keycode == KEY_KP_ADD:
 			zoom_camera(CAMERA_ZOOM_STEP)
@@ -109,156 +129,55 @@ func _input(event):
 
 func _on_tower_selected(tower_type: String):
 	selected_tower_type = tower_type
-	placing_blocker = false
-
-func _on_blocker_selected():
-	placing_blocker = true
-	selected_tower_type = ""
 
 func zoom_camera(zoom_delta: float):
-	if camera:
-		var new_zoom = camera.zoom.x + zoom_delta
-		new_zoom = clamp(new_zoom, CAMERA_ZOOM_MIN, CAMERA_ZOOM_MAX)
-		camera.zoom = Vector2(new_zoom, new_zoom)
-
-func setup_initial_map():
-	# Create first map section
-	add_map_section()
-	
-func add_map_section():
-	current_section += 1
-	var section_data = generate_section_layout(current_section)
-	map_sections.append(section_data)
-	
-	# Build continuous paths across all sections instead of replacing them.
-	if paths.is_empty():
-		paths = section_data.paths
-	else:
-		for i in range(min(paths.size(), section_data.paths.size())):
-			# Skip first point to avoid duplicate seam between sections.
-			for j in range(1, section_data.paths[i].size()):
-				paths[i].append(section_data.paths[i][j])
-	
-	# Keep spawn fixed at the very start of the map.
-	if not paths.is_empty() and not paths[0].is_empty():
-		spawn_point = paths[0][0]
-	
-	# Draw the section
-	draw_map_section(section_data)
-	redraw_path_overlay()
-	queue_redraw()
-	
-	# Update camera to show the current map area
-	update_camera_position()
-
-func generate_section_layout(section_num):
-	var section = {
-		"id": section_num,
-		"spawn": Vector2(0, MAP_SECTION_HEIGHT / 2) * TILE_SIZE,
-		"end": Vector2(MAP_SECTION_WIDTH * section_num, MAP_SECTION_HEIGHT / 2) * TILE_SIZE,
-		"paths": []
-	}
-	
-	# Generate multiple paths (upper and lower)
-	var base_x = MAP_SECTION_WIDTH * (section_num - 1)
-	
-	# Main path (middle)
-	var main_path = []
-	for i in range(MAP_SECTION_WIDTH + 1):
-		main_path.append(Vector2(base_x + i, MAP_SECTION_HEIGHT / 2) * TILE_SIZE)
-	section.paths.append(main_path)
-	
-	# Upper path
-	var upper_path = []
-	for i in range(MAP_SECTION_WIDTH + 1):
-		# Move upper lane further away from center so there is room to build between lanes.
-		var y = MAP_SECTION_HEIGHT / 2 - 3 if i % 3 == 0 else MAP_SECTION_HEIGHT / 2 - 2
-		upper_path.append(Vector2(base_x + i, y) * TILE_SIZE)
-	section.paths.append(upper_path)
-	
-	# Lower path
-	var lower_path = []
-	for i in range(MAP_SECTION_WIDTH + 1):
-		# Move lower lane further away from center so there is room to build between lanes.
-		var y = MAP_SECTION_HEIGHT / 2 + 3 if i % 3 == 0 else MAP_SECTION_HEIGHT / 2 + 2
-		lower_path.append(Vector2(base_x + i, y) * TILE_SIZE)
-	section.paths.append(lower_path)
-	
-	return section
-
-# Placera högre upp i filen (helst som en on_ready var)
-
-
-func draw_map_section(section_data):
-	# Här anger du rätt source_id och atlas_coords för gräs
-	var ground_source_id = 0
-	var ground_atlas_coords = Vector2i(1, 1)	# EXEMPEL: ändra till rätt för din gräsruta!
-	
-	for x in range(MAP_SECTION_WIDTH):
-		for y in range(MAP_SECTION_HEIGHT):
-			var px = MAP_SECTION_WIDTH * (section_data.id - 1) + x
-			ground_map.set_cell(Vector2i(px, y), ground_source_id, ground_atlas_coords)
-			
-	# Path rendering, t.ex. sand/stenväg
-	var path_source_id = 0
-	var path_atlas_coords = Vector2i(3,3)		# EXEMPEL: ändra till rätt för din path-tile!
-	
-	for path in section_data.paths:
-		for point in path:
-			var cell = Vector2i(point.x / TILE_SIZE, point.y / TILE_SIZE)
-			ground_map.set_cell(cell, path_source_id, path_atlas_coords)
-
-
-func redraw_path_overlay():
-	if not path_overlay:
+	if not camera:
 		return
 	
-	for child in path_overlay.get_children():
-		child.queue_free()
+	var new_zoom = camera.zoom.x + zoom_delta
+	new_zoom = clamp(new_zoom, CAMERA_ZOOM_MIN, CAMERA_ZOOM_MAX)
+	camera.zoom = Vector2(new_zoom, new_zoom)
+
+func setup_initial_map():
+	update_map_size_from_viewport()
+	draw_base_map()
+	update_camera_position()
+
+func draw_base_map():
+	if not ground_map:
+		return
 	
-	# Distinkta färger för att snabbt se varje rutt
-	var path_colors = [
-		Color(0.1, 0.8, 1.0, 0.9),
-		Color(1.0, 0.4, 0.2, 0.9),
-		Color(0.9, 0.9, 0.1, 0.9)
-	]
+	ground_map.clear()
+	for x in range(map_grid_width):
+		for y in range(map_grid_height):
+			ground_map.set_cell(Vector2i(x, y + MAP_TOP_OFFSET_TILES), GROUND_SOURCE_ID, GROUND_ATLAS_COORDS)
+
+func update_map_size_from_viewport():
+	var cell_size = get_grid_cell_size()
+	var viewport_size = get_viewport_rect().size
+	var width_tiles = int(ceil(viewport_size.x / cell_size)) + MAP_FILL_MARGIN_TILES
+	var map_top_offset_pixels = MAP_TOP_OFFSET_TILES * cell_size
+	var playable_height_pixels = max(viewport_size.y - map_top_offset_pixels, float(cell_size))
+	var height_tiles = int(ceil(playable_height_pixels / cell_size)) + MAP_FILL_MARGIN_TILES
 	
-	for path_index in range(paths.size()):
-		var path = paths[path_index]
-		if path.size() < 2:
-			continue
-		
-		var line = Line2D.new()
-		line.width = 8.0
-		line.default_color = path_colors[path_index % path_colors.size()]
-		line.antialiased = true
-		line.z_index = 3
-		
-		for point in path:
-			line.add_point(point + Vector2(TILE_SIZE / 2.0, TILE_SIZE / 2.0))
-		
-		path_overlay.add_child(line)
+	map_grid_width = max(width_tiles, MAP_SECTION_WIDTH)
+	map_grid_height = max(height_tiles, MAP_SECTION_HEIGHT)
 
 func update_camera_position():
-	if camera:
-		# Center camera on all accumulated sections (1 through current_section)
-		# As map expands, camera shifts right to keep the middle of the expanded map centered
-		# Formula: camera_x = (total_sections * section_width * tile_size) / 2
-		var map_width = MAP_SECTION_WIDTH * current_section * TILE_SIZE
-		var map_height = MAP_SECTION_HEIGHT * TILE_SIZE
-		camera.position = Vector2(map_width / 2.0, map_height / 2.0)
-		if DEBUG_MODE:
-			print("Camera positioned at ", camera.position, " for ", current_section, " sections")
+	if not camera:
+		return
+	
+	var cell_size = get_grid_cell_size()
+	var map_width = map_grid_width * cell_size
+	var map_height = map_grid_height * cell_size
+	var map_top_offset_pixels = MAP_TOP_OFFSET_TILES * cell_size
+	camera.position = Vector2(map_width / 2.0, map_top_offset_pixels + map_height / 2.0)
+	if DEBUG_MODE:
+		print("Camera positioned at ", camera.position)
 
 func start_wave():
 	current_wave += 1
-	
-	# Add new map section every wave
-	add_map_section()
-	
-	# Spawn enemies
 	spawn_wave_enemies()
-	
 	update_ui()
 
 func spawn_wave_enemies():
@@ -271,24 +190,32 @@ func spawn_wave_enemies():
 		spawn_enemy(enemy_type)
 
 func spawn_enemy(type: String):
-	if enemy_scenes.has(type):
-		var enemy = enemy_scenes[type].instantiate()
-		
-		# Choose random path
-		enemy.path = paths[randi() % paths.size()]
-		if enemy.path.size() > 0:
-			enemy.position = enemy.path[0]
-		else:
-			enemy.position = spawn_point
-		enemy.connect("reached_end", _on_enemy_reached_end)
-		enemy.connect("died", _on_enemy_died)
-		
-		enemy_container.add_child(enemy)
-		if DEBUG_MODE:
-			print("Spawned ", type, " at ", spawn_point, " with path of ", enemy.path.size(), " points")
+	if not enemy_scenes.has(type):
+		return
+	
+	var spawn_cell = get_random_spawn_cell()
+	if spawn_cell.x < 0:
+		if ui and ui.has_method("show_message"):
+			ui.show_message("Inga gangbara spawnpunkter kvar")
+		return
+	
+	var path_cells = find_path_cells(spawn_cell)
+	if path_cells.is_empty():
+		return
+	
+	var enemy = enemy_scenes[type].instantiate()
+	enemy.path = cells_to_world_path(path_cells)
+	enemy.position = enemy.path[0]
+	enemy.connect("reached_end", _on_enemy_reached_end)
+	enemy.connect("died", _on_enemy_died)
+	enemy_container.add_child(enemy)
+	
+	if DEBUG_MODE:
+		print("Spawned ", type, " from ", spawn_cell, " with path length ", path_cells.size())
 
 func _on_enemy_reached_end(enemy):
-	lives -= 1
+	if not DEBUG_INFINITE_RESOURCES:
+		lives -= 1
 	enemy.queue_free()
 	update_ui()
 	
@@ -309,115 +236,172 @@ func game_over():
 	get_tree().paused = true
 
 func place_tower(tower_type: String, pos: Vector2):
-	# Check if we have enough gold and position is valid
 	var tower_cost = get_tower_cost(tower_type)
 	var snapped_pos = snap_to_grid(pos)
-	if gold >= tower_cost and is_valid_tower_position(snapped_pos):
-		gold -= tower_cost
+	var tower_cell = world_to_cell(snapped_pos)
+	
+	var can_afford = DEBUG_INFINITE_RESOURCES or gold >= tower_cost
+	if can_afford and is_valid_tower_position(tower_cell):
+		if not DEBUG_INFINITE_RESOURCES:
+			gold -= tower_cost
 		var tower = load("res://scenes/towers/" + tower_type + ".tscn").instantiate()
 		tower.position = snapped_pos
 		tower.set_enemy_container(enemy_container)
 		if tower.has_method("set_projectile_container"):
 			tower.set_projectile_container(projectile_container)
+		add_tower_footprint(tower)
 		tower_container.add_child(tower)
+		tower_cells[tower_cell] = true
 		update_ui()
 		if ui and ui.has_method("show_message"):
 			ui.show_message("Tower placerad", Color(0.5, 1.0, 0.5, 1.0), 1.0)
 		return true
 	
 	if ui and ui.has_method("show_message"):
-		ui.show_message(get_tower_placement_error(tower_type, snapped_pos))
+		ui.show_message(get_tower_placement_error(tower_type, tower_cell))
 	return false
 
-func is_valid_tower_position(pos: Vector2) -> bool:
-	# Check not on a path cell (cell-based check gives tighter placement control).
-	if is_position_on_path_cell(pos):
+func is_valid_tower_position(cell: Vector2i) -> bool:
+	if not is_cell_in_bounds(cell):
 		return false
-	
-	# Check not overlapping other towers
-	for tower in tower_container.get_children():
-		if tower.position.distance_to(pos) < TILE_SIZE:
-			return false
-	
+	if tower_cells.has(cell):
+		return false
+	if would_block_all_paths(cell):
+		return false
 	return true
+
+func get_tower_placement_error(tower_type: String, cell: Vector2i) -> String:
+	var tower_cost = get_tower_cost(tower_type)
+	if gold < tower_cost:
+		return "Inte nog med guld (kraver " + str(tower_cost) + ")"
+	if not is_cell_in_bounds(cell):
+		return "Utanforkartan"
+	if tower_cells.has(cell):
+		return "Cellen ar redan upptagen"
+	if would_block_all_paths(cell):
+		return "Kan inte blockera all passage till hoger"
+	return "Ogiltig position"
 
 func get_tower_cost(type: String) -> int:
 	var costs = {
 		"archer_tower": 50,
 		"mage_tower": 100,
-		"cannon_tower": 150,
-		"path_blocker": 300
+		"cannon_tower": 150
 	}
 	return costs.get(type, 50)
 
-func place_path_blocker(pos: Vector2):
-	# Expensive way to block and extend paths
-	var snapped_pos = snap_to_grid(pos)
-	if gold >= 300:
-		gold -= 300
-		# Create a blocker that forces path recalculation
-		var blocker = ColorRect.new()
-		blocker.position = snapped_pos
-		blocker.size = Vector2(TILE_SIZE - 2, TILE_SIZE - 2)
-		blocker.color = Color.DARK_GRAY
-		add_child(blocker)
-		
-		# Recalculate paths to go around blocker
-		recalculate_paths(snapped_pos)
-		update_ui()
-		if ui and ui.has_method("show_message"):
-			ui.show_message("Blocker placerad", Color(0.5, 1.0, 0.5, 1.0), 1.0)
-		return true
-	
-	if ui and ui.has_method("show_message"):
-		ui.show_message("Inte nog med guld (kräver 300)")
+func add_tower_footprint(tower: Node2D):
+	var half = TILE_SIZE * 0.5 - 2.0
+	var frame = Line2D.new()
+	frame.width = 2.0
+	frame.default_color = Color(0.95, 0.95, 1.0, 0.9)
+	frame.add_point(Vector2(-half, -half))
+	frame.add_point(Vector2(half, -half))
+	frame.add_point(Vector2(half, half))
+	frame.add_point(Vector2(-half, half))
+	frame.add_point(Vector2(-half, -half))
+	tower.add_child(frame)
+
+func would_block_all_paths(candidate_cell: Vector2i) -> bool:
+	tower_cells[candidate_cell] = true
+	var still_has_path = exists_any_spawn_to_goal_path()
+	tower_cells.erase(candidate_cell)
+	return not still_has_path
+
+func exists_any_spawn_to_goal_path() -> bool:
+	for y in range(map_grid_height):
+		var start_cell = Vector2i(0, y)
+		if not is_cell_walkable(start_cell):
+			continue
+		if not find_path_cells(start_cell).is_empty():
+			return true
 	return false
 
-func get_tower_placement_error(tower_type: String, pos: Vector2) -> String:
-	var tower_cost = get_tower_cost(tower_type)
-	if gold < tower_cost:
-		return "Inte nog med guld (kräver " + str(tower_cost) + ")"
+func get_random_spawn_cell() -> Vector2i:
+	var candidates: Array[Vector2i] = []
+	for y in range(map_grid_height):
+		var start_cell = Vector2i(0, y)
+		if not is_cell_walkable(start_cell):
+			continue
+		if not find_path_cells(start_cell).is_empty():
+			candidates.append(start_cell)
 	
-	if is_position_on_path_cell(pos):
-		return "Kan inte placera pa stigen"
+	if candidates.is_empty():
+		return Vector2i(-1, -1)
+	return candidates[randi() % candidates.size()]
+
+func find_path_cells(start_cell: Vector2i) -> Array[Vector2i]:
+	if not is_cell_walkable(start_cell):
+		return []
 	
-	for tower in tower_container.get_children():
-		if tower.position.distance_to(pos) < TILE_SIZE:
-			return "For nara ett annat torn"
+	var queue: Array[Vector2i] = [start_cell]
+	var came_from: Dictionary = {}
+	var sentinel = Vector2i(-9999, -9999)
+	came_from[start_cell] = sentinel
 	
-	return "Ogiltig position"
+	var goal_cell = Vector2i(-1, -1)
+	while not queue.is_empty():
+		var current = queue.pop_front()
+		if current.x == map_grid_width - 1:
+			goal_cell = current
+			break
+		
+		for dir in CARDINAL_DIRS:
+			var next_cell = current + dir
+			if not is_cell_walkable(next_cell):
+				continue
+			if came_from.has(next_cell):
+				continue
+			came_from[next_cell] = current
+			queue.append(next_cell)
+	
+	if goal_cell.x < 0:
+		return []
+	
+	var path_reversed: Array[Vector2i] = []
+	var step = goal_cell
+	while step != sentinel:
+		path_reversed.append(step)
+		step = came_from[step]
+	
+	path_reversed.reverse()
+	return path_reversed
+
+func cells_to_world_path(path_cells: Array[Vector2i]) -> Array:
+	var world_path: Array = []
+	for cell in path_cells:
+		world_path.append(cell_to_world(cell))
+	return world_path
 
 func snap_to_grid(pos: Vector2) -> Vector2:
-	var cell_x = int(pos.x / TILE_SIZE)
-	var cell_y = int(pos.y / TILE_SIZE)
-	return Vector2(
-		cell_x * TILE_SIZE + TILE_SIZE / 2.0,
-		cell_y * TILE_SIZE + TILE_SIZE / 2.0
-	)
+	return cell_to_world(world_to_cell(pos))
 
 func world_to_cell(pos: Vector2) -> Vector2i:
-	return Vector2i(int(pos.x / TILE_SIZE), int(pos.y / TILE_SIZE))
+	var cell_size = get_grid_cell_size()
+	var map_top_offset_pixels = MAP_TOP_OFFSET_TILES * cell_size
+	return Vector2i(floori(pos.x / cell_size), floori((pos.y - map_top_offset_pixels) / cell_size))
 
-func is_position_on_path_cell(pos: Vector2) -> bool:
-	var tower_cell = world_to_cell(pos)
-	for path in paths:
-		for point in path:
-			if world_to_cell(point) == tower_cell:
-				return true
-	return false
+func cell_to_world(cell: Vector2i) -> Vector2:
+	var cell_size = get_grid_cell_size()
+	var map_top_offset_pixels = MAP_TOP_OFFSET_TILES * cell_size
+	return Vector2(
+		cell.x * cell_size + cell_size / 2.0,
+		map_top_offset_pixels + cell.y * cell_size + cell_size / 2.0
+	)
 
-func recalculate_paths(blocked_pos: Vector2):
-	# Improved path recalculation with bounds checking
-	for path in paths:
-		for i in range(len(path)):
-			if path[i].distance_to(blocked_pos) < TILE_SIZE:
-				# Try to offset the path point, ensuring it stays within bounds
-				var new_pos = path[i] + Vector2(0, TILE_SIZE)
-				# Check if new position is within map bounds
-				if new_pos.y / TILE_SIZE < MAP_SECTION_HEIGHT:
-					path[i] = new_pos
-				else:
-					# If can't go down, try going up
-					path[i] = path[i] - Vector2(0, TILE_SIZE)
-	redraw_path_overlay()
-	queue_redraw()
+func get_grid_cell_size() -> float:
+	if ground_map and ground_map.tile_set:
+		return float(ground_map.tile_set.tile_size.x)
+	return float(TILE_SIZE)
+
+func is_cell_in_bounds(cell: Vector2i) -> bool:
+	if cell.x < 0 or cell.x >= map_grid_width or cell.y < 0 or cell.y >= map_grid_height:
+		return false
+	# Only allow placement/pathing on cells that actually have a drawn ground tile.
+	if not ground_map:
+		return false
+	var tile_cell = Vector2i(cell.x, cell.y + MAP_TOP_OFFSET_TILES)
+	return ground_map.get_cell_source_id(tile_cell) != -1
+
+func is_cell_walkable(cell: Vector2i) -> bool:
+	return is_cell_in_bounds(cell) and not tower_cells.has(cell)

@@ -2,7 +2,6 @@ extends CanvasLayer
 
 signal start_wave_pressed
 signal tower_selected(tower_type)
-signal blocker_selected
 
 @onready var gold_label = $MarginContainer/VBoxContainer/StatsContainer/GoldLabel
 @onready var lives_label = $MarginContainer/VBoxContainer/StatsContainer/LivesLabel
@@ -19,7 +18,6 @@ func _ready():
 	$MarginContainer/VBoxContainer/TowerButtons/ArcherButton.pressed.connect(func(): tower_selected.emit("archer_tower"))
 	$MarginContainer/VBoxContainer/TowerButtons/MageButton.pressed.connect(func(): tower_selected.emit("mage_tower"))
 	$MarginContainer/VBoxContainer/TowerButtons/CannonButton.pressed.connect(func(): tower_selected.emit("cannon_tower"))
-	$MarginContainer/VBoxContainer/TowerButtons/BlockerButton.pressed.connect(func(): blocker_selected.emit())
 	
 	message_label = Label.new()
 	message_label.visible = false

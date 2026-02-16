@@ -6,6 +6,7 @@ extends Node2D
 @export var projectile_speed = 300.0
 @export var use_projectiles = false
 @export var projectile_scene: PackedScene = null
+const DEBUG_ZERO_DAMAGE = true
 
 var enemy_container = null
 var projectile_container = null
@@ -18,6 +19,8 @@ var attack_timer = 0.0
 func _ready():
 	if attack_speed <= 0:
 		attack_speed = 1.0  # Default to prevent division by zero
+	if DEBUG_ZERO_DAMAGE:
+		damage = 0.0
 	attack_timer = 1.0 / attack_speed
 	if range_circle:
 		range_circle.scale = Vector2(range / 50.0, range / 50.0)

@@ -8,17 +8,20 @@ const MAP_FILL_MARGIN_TILES = 2
 const MAP_TOP_OFFSET_TILES = 2
 const BASE_ENEMY_COUNT = 5
 const ENEMY_SCALING_FACTOR = 2
+const ENEMY_HP_SCALING_PER_WAVE = 0.12
+const ENEMY_BURST_INTERVAL = 1.0
+const ENEMY_BURST_SIZE_GROWTH_WAVES = 4
 const DRAGON_UNLOCK_WAVE = 5
 const DEBUG_MODE = false
 const DEBUG_INFINITE_RESOURCES = false
 const DEBUG_STARTING_GOLD = 999999
 const DEBUG_STARTING_LIVES = 999999
-const PLAY_AREA_BORDER_COLOR = Color(0.95, 0.95, 0.95, 0.95)
-const PLAY_AREA_BORDER_WIDTH = 3.0
+const PLAY_AREA_BORDER_COLOR = Color(1.0, 1.0, 1.0, 1.0)
+const PLAY_AREA_BORDER_WIDTH = 6.0
 const TOWER_MIN_SPACING_CELLS = 1.0
 const MONSTER_WALK_BAND_HEIGHT_TILES = 6
-const WALK_WALL_COLOR = Color(0.45, 0.28, 0.12, 1.0)
-const WALK_WALL_WIDTH = 6.0
+const WALK_WALL_COLOR = Color(0.55, 0.30, 0.10, 1.0)
+const WALK_WALL_WIDTH = 12.0
 
 # Tile atlas values for GroundMap.tres
 const GROUND_SOURCE_ID = 0
@@ -53,6 +56,7 @@ var is_camera_dragging = false
 @onready var enemy_container = $Enemies
 @onready var tower_container = $Towers
 @onready var projectile_container = $Projectiles
+@onready var path_overlay = $PathOverlay
 @onready var ui = $UI
 @onready var camera = $Camera2D
 @onready var ground_map: TileMapLayer = $GroundMap
@@ -71,33 +75,54 @@ func _ready():
 		lives = DEBUG_STARTING_LIVES
 	setup_initial_map()
 	update_ui()
-	queue_redraw()
+	redraw_play_area_overlay()
 
 func _notification(what):
 	if what == NOTIFICATION_WM_SIZE_CHANGED:
 		update_map_size_from_viewport()
 		draw_base_map()
 		update_camera_position()
-		queue_redraw()
+		redraw_play_area_overlay()
 
 func _draw():
+	pass
+
+func redraw_play_area_overlay():
+	if not path_overlay:
+		return
+	
+	for child in path_overlay.get_children():
+		child.queue_free()
+	
 	var cell_size = get_grid_cell_size()
 	var map_top_offset_pixels = MAP_TOP_OFFSET_TILES * cell_size
-	var border_rect = Rect2(
-		Vector2(0, map_top_offset_pixels),
-		Vector2(map_grid_width * cell_size, map_grid_height * cell_size)
-	)
-	draw_rect(border_rect, PLAY_AREA_BORDER_COLOR, false, PLAY_AREA_BORDER_WIDTH)
+	var x_max = map_grid_width * cell_size
+	var y_min = map_top_offset_pixels
+	var y_max = map_top_offset_pixels + map_grid_height * cell_size
 	
-	# Draw temporary top/bottom walls that mark monster walk area.
+	# Play area border (always above the tilemap layer).
+	add_overlay_line(Vector2(0, y_min), Vector2(x_max, y_min), PLAY_AREA_BORDER_COLOR, PLAY_AREA_BORDER_WIDTH)
+	add_overlay_line(Vector2(0, y_max), Vector2(x_max, y_max), PLAY_AREA_BORDER_COLOR, PLAY_AREA_BORDER_WIDTH)
+	add_overlay_line(Vector2(0, y_min), Vector2(0, y_max), PLAY_AREA_BORDER_COLOR, PLAY_AREA_BORDER_WIDTH)
+	add_overlay_line(Vector2(x_max, y_min), Vector2(x_max, y_max), PLAY_AREA_BORDER_COLOR, PLAY_AREA_BORDER_WIDTH)
+	
+	# Temporary top/bottom walls that mark monster walk area.
 	var walk_row_min = get_walkable_row_min()
 	var walk_row_max = get_walkable_row_max()
 	var wall_top_y = map_top_offset_pixels + walk_row_min * cell_size
 	var wall_bottom_y = map_top_offset_pixels + (walk_row_max + 1) * cell_size
-	var wall_start = Vector2(0, wall_top_y)
-	var wall_end = Vector2(map_grid_width * cell_size, wall_top_y)
-	draw_line(wall_start, wall_end, WALK_WALL_COLOR, WALK_WALL_WIDTH)
-	draw_line(Vector2(0, wall_bottom_y), Vector2(map_grid_width * cell_size, wall_bottom_y), WALK_WALL_COLOR, WALK_WALL_WIDTH)
+	add_overlay_line(Vector2(0, wall_top_y), Vector2(x_max, wall_top_y), WALK_WALL_COLOR, WALK_WALL_WIDTH)
+	add_overlay_line(Vector2(0, wall_bottom_y), Vector2(x_max, wall_bottom_y), WALK_WALL_COLOR, WALK_WALL_WIDTH)
+
+func add_overlay_line(from_point: Vector2, to_point: Vector2, color: Color, width: float):
+	var line = Line2D.new()
+	line.width = width
+	line.default_color = color
+	line.z_index = 10
+	line.antialiased = true
+	line.add_point(from_point)
+	line.add_point(to_point)
+	path_overlay.add_child(line)
 
 func _process(delta):
 	var camera_movement = Vector2.ZERO
@@ -201,11 +226,17 @@ func start_wave():
 func spawn_wave_enemies():
 	var enemy_count = BASE_ENEMY_COUNT + current_wave * ENEMY_SCALING_FACTOR
 	var enemy_types = ["goblin", "golem", "orc"] if current_wave < DRAGON_UNLOCK_WAVE else ["goblin", "golem", "orc", "dragon"]
+	var burst_size = 1 + int((current_wave - 1) / ENEMY_BURST_SIZE_GROWTH_WAVES)
+	var spawned = 0
 	
-	for i in range(enemy_count):
-		await get_tree().create_timer(1.0).timeout
-		var enemy_type = enemy_types[randi() % enemy_types.size()]
-		spawn_enemy(enemy_type)
+	while spawned < enemy_count:
+		await get_tree().create_timer(ENEMY_BURST_INTERVAL).timeout
+		
+		var to_spawn_now = min(burst_size, enemy_count - spawned)
+		for i in range(to_spawn_now):
+			var enemy_type = enemy_types[randi() % enemy_types.size()]
+			spawn_enemy(enemy_type)
+			spawned += 1
 
 func spawn_enemy(type: String):
 	if not enemy_scenes.has(type):
@@ -222,6 +253,7 @@ func spawn_enemy(type: String):
 		return
 	
 	var enemy = enemy_scenes[type].instantiate()
+	apply_enemy_wave_scaling(enemy)
 	enemy.path = cells_to_world_path(path_cells)
 	enemy.position = enemy.path[0]
 	enemy.connect("reached_end", _on_enemy_reached_end)
@@ -230,6 +262,16 @@ func spawn_enemy(type: String):
 	
 	if DEBUG_MODE:
 		print("Spawned ", type, " from ", spawn_cell, " with path length ", path_cells.size())
+
+func apply_enemy_wave_scaling(enemy):
+	if not enemy:
+		return
+	
+	var hp_multiplier = 1.0 + max(current_wave - 1, 0) * ENEMY_HP_SCALING_PER_WAVE
+	enemy.max_health *= hp_multiplier
+	enemy.current_health = enemy.max_health
+	if enemy.has_method("update_health_bar"):
+		enemy.update_health_bar()
 
 func _on_enemy_reached_end(enemy):
 	if not DEBUG_INFINITE_RESOURCES:

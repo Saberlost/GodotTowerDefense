@@ -1,39 +1,23 @@
-[gd_scene load_steps=12 format=3 uid="uid://biw1xyg2w6xlj"]
+[gd_scene load_steps=8 format=3 uid="uid://biw1xyg2w6xlj"]
 
 [ext_resource type="Script" uid="uid://cnsr1phy2v2lp" path="res://scripts/enemy.gd" id="1"]
-[ext_resource type="Texture2D" uid="uid://3e47pes6l6mg" path="res://sprites/Characters(100x100)/Orc/Orc/Orc-Walk.png" id="2"]
+[ext_resource type="Texture2D" uid="uid://c2ban0ew5dumn" path="res://sprites/orc_walk_chromakey.png" id="2"]
 
 [sub_resource type="AtlasTexture" id="1"]
 atlas = ExtResource("2")
-region = Rect2(0, 0, 100, 100)
+region = Rect2(184, 456, 534, 517)
 
 [sub_resource type="AtlasTexture" id="2"]
 atlas = ExtResource("2")
-region = Rect2(100, 0, 100, 100)
+region = Rect2(820, 456, 534, 517)
 
 [sub_resource type="AtlasTexture" id="3"]
 atlas = ExtResource("2")
-region = Rect2(200, 0, 100, 100)
+region = Rect2(1457, 456, 534, 517)
 
 [sub_resource type="AtlasTexture" id="4"]
 atlas = ExtResource("2")
-region = Rect2(300, 0, 100, 100)
-
-[sub_resource type="AtlasTexture" id="5"]
-atlas = ExtResource("2")
-region = Rect2(400, 0, 100, 100)
-
-[sub_resource type="AtlasTexture" id="6"]
-atlas = ExtResource("2")
-region = Rect2(500, 0, 100, 100)
-
-[sub_resource type="AtlasTexture" id="7"]
-atlas = ExtResource("2")
-region = Rect2(600, 0, 100, 100)
-
-[sub_resource type="AtlasTexture" id="8"]
-atlas = ExtResource("2")
-region = Rect2(700, 0, 100, 100)
+region = Rect2(2096, 456, 534, 517)
 
 [sub_resource type="SpriteFrames" id="9"]
 animations = [{
@@ -49,22 +33,10 @@ animations = [{
 }, {
 "duration": 1.0,
 "texture": SubResource("4")
-}, {
-"duration": 1.0,
-"texture": SubResource("5")
-}, {
-"duration": 1.0,
-"texture": SubResource("6")
-}, {
-"duration": 1.0,
-"texture": SubResource("7")
-}, {
-"duration": 1.0,
-"texture": SubResource("8")
 }],
 "loop": true,
 "name": &"walk",
-"speed": 8.0
+"speed": 6.0
 }]
 
 [node name="Orc" type="CharacterBody2D"]
@@ -75,6 +47,7 @@ speed = 60.0
 gold_reward = 20
 
 [node name="Sprite2D" type="AnimatedSprite2D" parent="."]
+scale = Vector2(0.14, 0.14)
 sprite_frames = SubResource("9")
 animation = &"walk"
 autoplay = "walk"

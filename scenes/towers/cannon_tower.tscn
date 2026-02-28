@@ -1,16 +1,25 @@
-[gd_scene load_steps=2 format=3 uid="uid://c1u7ahm0gjlxg"]
+[gd_scene load_steps=5 format=3 uid="uid://c1u7ahm0gjlxg"]
 
 [ext_resource type="Script" uid="uid://bcnchke4v53s0" path="res://scripts/tower.gd" id="1"]
+[ext_resource type="Texture2D" path="res://sprites/cannon_sprite.png" id="2_cannon"]
+
+[sub_resource type="Shader" id="Shader_checker_cut"]
+code = "shader_type canvas_item;\n\nuniform vec3 checker_a = vec3(0.266667, 0.266667, 0.266667);\nuniform vec3 checker_b = vec3(0.4, 0.4, 0.4);\nuniform float threshold = 0.045;\n\nvoid fragment() {\n\tvec4 c = texture(TEXTURE, UV);\n\tfloat da = distance(c.rgb, checker_a);\n\tfloat db = distance(c.rgb, checker_b);\n\tif (c.a > 0.99 && (da < threshold || db < threshold)) {\n\t\tc.a = 0.0;\n\t}\n\tCOLOR = c;\n}\n"
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_checker_cut"]
+shader = SubResource("Shader_checker_cut")
 
 [node name="CannonTower" type="Node2D"]
 script = ExtResource("1")
 damage = 50.0
 attack_speed = 0.5
 range = 180.0
+rotate_sprite_to_target = false
 
-[node name="Sprite2D" type="Polygon2D" parent="."]
-color = Color(0.3, 0.3, 0.3, 1)
-polygon = PackedVector2Array(-25, -20, -25, 20, 25, 20, 25, -20)
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("2_cannon")
+material = SubResource("ShaderMaterial_checker_cut")
+scale = Vector2(0.04, 0.04)
 
 [node name="RangeCircle" type="Polygon2D" parent="."]
 color = Color(1, 0, 0, 0.1)

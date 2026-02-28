@@ -10,11 +10,15 @@ const BASE_ENEMY_COUNT = 5
 const ENEMY_SCALING_FACTOR = 2
 const DRAGON_UNLOCK_WAVE = 5
 const DEBUG_MODE = false
-const DEBUG_INFINITE_RESOURCES = true
+const DEBUG_INFINITE_RESOURCES = false
 const DEBUG_STARTING_GOLD = 999999
 const DEBUG_STARTING_LIVES = 999999
 const PLAY_AREA_BORDER_COLOR = Color(0.95, 0.95, 0.95, 0.95)
 const PLAY_AREA_BORDER_WIDTH = 3.0
+const TOWER_MIN_SPACING_CELLS = 1.0
+const MONSTER_WALK_BAND_HEIGHT_TILES = 6
+const WALK_WALL_COLOR = Color(0.45, 0.28, 0.12, 1.0)
+const WALK_WALL_WIDTH = 6.0
 
 # Tile atlas values for GroundMap.tres
 const GROUND_SOURCE_ID = 0
@@ -39,6 +43,7 @@ var gold = 200
 var lives = 20
 var selected_tower_type = ""
 var tower_cells: Dictionary = {}
+var tower_nodes_by_cell: Dictionary = {}
 var map_grid_width = MAP_SECTION_WIDTH
 var map_grid_height = MAP_SECTION_HEIGHT
 
@@ -54,6 +59,7 @@ var is_camera_dragging = false
 
 var enemy_scenes = {
 	"goblin": preload("res://scenes/enemies/goblin.tscn"),
+	"golem": preload("res://scenes/enemies/golem.tscn"),
 	"orc": preload("res://scenes/enemies/orc.tscn"),
 	"dragon": preload("res://scenes/enemies/dragon.tscn")
 }
@@ -82,6 +88,16 @@ func _draw():
 		Vector2(map_grid_width * cell_size, map_grid_height * cell_size)
 	)
 	draw_rect(border_rect, PLAY_AREA_BORDER_COLOR, false, PLAY_AREA_BORDER_WIDTH)
+	
+	# Draw temporary top/bottom walls that mark monster walk area.
+	var walk_row_min = get_walkable_row_min()
+	var walk_row_max = get_walkable_row_max()
+	var wall_top_y = map_top_offset_pixels + walk_row_min * cell_size
+	var wall_bottom_y = map_top_offset_pixels + (walk_row_max + 1) * cell_size
+	var wall_start = Vector2(0, wall_top_y)
+	var wall_end = Vector2(map_grid_width * cell_size, wall_top_y)
+	draw_line(wall_start, wall_end, WALK_WALL_COLOR, WALK_WALL_WIDTH)
+	draw_line(Vector2(0, wall_bottom_y), Vector2(map_grid_width * cell_size, wall_bottom_y), WALK_WALL_COLOR, WALK_WALL_WIDTH)
 
 func _process(delta):
 	var camera_movement = Vector2.ZERO
@@ -111,10 +127,12 @@ func _input(event):
 			else:
 				is_camera_dragging = false
 		elif event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+			var mouse_pos = get_global_mouse_position()
 			if selected_tower_type != "":
-				var mouse_pos = get_global_mouse_position()
 				if place_tower(selected_tower_type, mouse_pos):
 					selected_tower_type = ""
+			else:
+				try_upgrade_tower_at(mouse_pos)
 	
 	if event is InputEventMouseMotion and is_camera_dragging:
 		var drag_delta = camera_drag_start - event.position
@@ -182,7 +200,7 @@ func start_wave():
 
 func spawn_wave_enemies():
 	var enemy_count = BASE_ENEMY_COUNT + current_wave * ENEMY_SCALING_FACTOR
-	var enemy_types = ["goblin", "orc"] if current_wave < DRAGON_UNLOCK_WAVE else ["goblin", "orc", "dragon"]
+	var enemy_types = ["goblin", "golem", "orc"] if current_wave < DRAGON_UNLOCK_WAVE else ["goblin", "golem", "orc", "dragon"]
 	
 	for i in range(enemy_count):
 		await get_tree().create_timer(1.0).timeout
@@ -252,6 +270,7 @@ func place_tower(tower_type: String, pos: Vector2):
 		add_tower_footprint(tower)
 		tower_container.add_child(tower)
 		tower_cells[tower_cell] = true
+		tower_nodes_by_cell[tower_cell] = tower
 		update_ui()
 		if ui and ui.has_method("show_message"):
 			ui.show_message("Tower placerad", Color(0.5, 1.0, 0.5, 1.0), 1.0)
@@ -261,10 +280,53 @@ func place_tower(tower_type: String, pos: Vector2):
 		ui.show_message(get_tower_placement_error(tower_type, tower_cell))
 	return false
 
+func try_upgrade_tower_at(world_pos: Vector2) -> bool:
+	var tower = get_tower_at_world_pos(world_pos)
+	if not tower:
+		return false
+	if not tower.has_method("can_upgrade") or not tower.has_method("get_upgrade_cost") or not tower.has_method("upgrade_tower"):
+		return false
+	
+	if not tower.can_upgrade():
+		if ui and ui.has_method("show_message"):
+			ui.show_message("Tornet ar redan max level")
+		return true
+	
+	var upgrade_cost = tower.get_upgrade_cost()
+	if not DEBUG_INFINITE_RESOURCES and gold < upgrade_cost:
+		if ui and ui.has_method("show_message"):
+			ui.show_message("Inte nog med guld for upgrade (" + str(upgrade_cost) + ")")
+		return true
+	
+	if tower.upgrade_tower():
+		if not DEBUG_INFINITE_RESOURCES:
+			gold -= upgrade_cost
+		update_ui()
+		if ui and ui.has_method("show_message"):
+			ui.show_message("Torn uppgraderat till nasta level", Color(0.5, 1.0, 0.5, 1.0), 1.0)
+	return true
+
+func get_tower_at_world_pos(world_pos: Vector2):
+	var cell = world_to_cell(world_pos)
+	if tower_nodes_by_cell.has(cell):
+		return tower_nodes_by_cell[cell]
+	return null
+
+func has_tower_spacing_conflict(candidate_cell: Vector2i) -> bool:
+	var min_distance = get_grid_cell_size() * TOWER_MIN_SPACING_CELLS
+	var candidate_world = cell_to_world(candidate_cell)
+	for existing_cell in tower_cells.keys():
+		var existing_world = cell_to_world(existing_cell)
+		if candidate_world.distance_to(existing_world) < min_distance:
+			return true
+	return false
+
 func is_valid_tower_position(cell: Vector2i) -> bool:
 	if not is_cell_in_bounds(cell):
 		return false
 	if tower_cells.has(cell):
+		return false
+	if has_tower_spacing_conflict(cell):
 		return false
 	if would_block_all_paths(cell):
 		return false
@@ -278,6 +340,8 @@ func get_tower_placement_error(tower_type: String, cell: Vector2i) -> String:
 		return "Utanforkartan"
 	if tower_cells.has(cell):
 		return "Cellen ar redan upptagen"
+	if has_tower_spacing_conflict(cell):
+		return "For nara ett annat torn"
 	if would_block_all_paths(cell):
 		return "Kan inte blockera all passage till hoger"
 	return "Ogiltig position"
@@ -291,7 +355,7 @@ func get_tower_cost(type: String) -> int:
 	return costs.get(type, 50)
 
 func add_tower_footprint(tower: Node2D):
-	var half = TILE_SIZE * 0.5 - 2.0
+	var half = get_grid_cell_size() * 0.5 - 2.0
 	var frame = Line2D.new()
 	frame.width = 2.0
 	frame.default_color = Color(0.95, 0.95, 1.0, 0.9)
@@ -309,7 +373,9 @@ func would_block_all_paths(candidate_cell: Vector2i) -> bool:
 	return not still_has_path
 
 func exists_any_spawn_to_goal_path() -> bool:
-	for y in range(map_grid_height):
+	var row_min = get_walkable_row_min()
+	var row_max = get_walkable_row_max()
+	for y in range(row_min, row_max + 1):
 		var start_cell = Vector2i(0, y)
 		if not is_cell_walkable(start_cell):
 			continue
@@ -319,7 +385,9 @@ func exists_any_spawn_to_goal_path() -> bool:
 
 func get_random_spawn_cell() -> Vector2i:
 	var candidates: Array[Vector2i] = []
-	for y in range(map_grid_height):
+	var row_min = get_walkable_row_min()
+	var row_max = get_walkable_row_max()
+	for y in range(row_min, row_max + 1):
 		var start_cell = Vector2i(0, y)
 		if not is_cell_walkable(start_cell):
 			continue
@@ -404,4 +472,16 @@ func is_cell_in_bounds(cell: Vector2i) -> bool:
 	return ground_map.get_cell_source_id(tile_cell) != -1
 
 func is_cell_walkable(cell: Vector2i) -> bool:
-	return is_cell_in_bounds(cell) and not tower_cells.has(cell)
+	if not is_cell_in_bounds(cell):
+		return false
+	if cell.y < get_walkable_row_min() or cell.y > get_walkable_row_max():
+		return false
+	return not tower_cells.has(cell)
+
+func get_walkable_row_min() -> int:
+	if map_grid_height <= MONSTER_WALK_BAND_HEIGHT_TILES:
+		return 0
+	return int((map_grid_height - MONSTER_WALK_BAND_HEIGHT_TILES) / 2)
+
+func get_walkable_row_max() -> int:
+	return min(map_grid_height - 1, get_walkable_row_min() + MONSTER_WALK_BAND_HEIGHT_TILES - 1)

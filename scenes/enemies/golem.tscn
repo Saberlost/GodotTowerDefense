@@ -1,0 +1,32 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" uid="uid://cnsr1phy2v2lp" path="res://scripts/enemy.gd" id="1"]
+[ext_resource type="Texture2D" uid="uid://cg0ow5oynvp1u" path="res://sprites/sprits_monsters.png" id="2"]
+
+[sub_resource type="AtlasTexture" id="1"]
+atlas = ExtResource("2")
+region = Rect2(400, 360, 230, 230)
+
+[node name="Golem" type="CharacterBody2D"]
+collision_layer = 2
+collision_mask = 0
+script = ExtResource("1")
+speed = 45.0
+max_health = 140.0
+gold_reward = 30
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = SubResource("1")
+position = Vector2(0, -4)
+scale = Vector2(0.25, 0.25)
+
+[node name="CollisionShape2D" type="CollisionPolygon2D" parent="."]
+polygon = PackedVector2Array(-22, -26, 22, -26, 22, 26, -22, 26)
+
+[node name="HealthBar" type="ProgressBar" parent="."]
+offset_left = -26.0
+offset_top = -44.0
+offset_right = 26.0
+offset_bottom = -38.0
+value = 100.0
+show_percentage = false

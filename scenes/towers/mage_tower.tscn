@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3 uid="uid://cq8kpv8gfy1dq"]
+[gd_scene load_steps=3 format=3 uid="uid://cq8kpv8gfy1dq"]
 
 [ext_resource type="Script" uid="uid://bcnchke4v53s0" path="res://scripts/tower.gd" id="1"]
+[ext_resource type="Texture2D" path="res://sprites/wizard_sprite_chromakey.png" id="2_wizard"]
 
 [node name="MageTower" type="Node2D"]
 script = ExtResource("1")
@@ -8,9 +9,10 @@ damage = 25.0
 attack_speed = 1.0
 range = 250.0
 
-[node name="Sprite2D" type="Polygon2D" parent="."]
-color = Color(0.5, 0, 0.8, 1)
-polygon = PackedVector2Array(-15, -25, 0, -40, 15, -25, 15, 20, 0, 25, -15, 20)
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("2_wizard")
+scale = Vector2(0.07, 0.07)
+position = Vector2(0, -2)
 
 [node name="RangeCircle" type="Polygon2D" parent="."]
 color = Color(0.5, 0, 1, 0.1)
